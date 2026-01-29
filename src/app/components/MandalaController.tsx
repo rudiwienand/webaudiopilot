@@ -534,6 +534,7 @@ export function MandalaController({
           width={size}
           height={size}
           className="cursor-pointer touch-none w-full h-auto"
+          data-mandala-controller="true"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}

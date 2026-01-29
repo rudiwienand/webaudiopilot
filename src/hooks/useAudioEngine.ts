@@ -22,6 +22,7 @@ export function useAudioEngine(
 ) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioTracksRef = useRef<Map<number, AudioTrackNode>>(new Map());
+  const masterGainNodeRef = useRef<GainNode | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -32,6 +33,11 @@ export function useAudioEngine(
       try {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
         audioContextRef.current = new AudioContext();
+        
+        // Create master gain node
+        masterGainNodeRef.current = audioContextRef.current.createGain();
+        masterGainNodeRef.current.connect(audioContextRef.current.destination);
+        
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to initialize audio context:', error);
@@ -112,9 +118,9 @@ export function useAudioEngine(
           const source = audioContextRef.current!.createMediaElementSource(audioElement);
           const gainNode = audioContextRef.current!.createGain();
           
-          // Connect: source -> gainNode -> destination
+          // Connect: source -> gainNode -> masterGainNode -> destination
           source.connect(gainNode);
-          gainNode.connect(audioContextRef.current!.destination);
+          gainNode.connect(masterGainNodeRef.current!);
           gainNode.gain.value = track.volume / 100;
 
           // Store the audio track node
@@ -213,6 +219,8 @@ export function useAudioEngine(
   return {
     isInitialized,
     loadingProgress,
-    loadError
+    loadError,
+    audioContext: audioContextRef.current,
+    masterGainNode: masterGainNodeRef.current
   };
 }

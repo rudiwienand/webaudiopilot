@@ -185,7 +185,7 @@ export default function App() {
   );
 
   // Initialize audio engine for current chakra
-  const { isInitialized, loadingProgress, loadError } =
+  const { isInitialized, loadingProgress, loadError, audioContext, masterGainNode } =
     useAudioEngine(
       selectedChakra,
       currentChakra?.tracks || [],
@@ -603,6 +603,8 @@ export default function App() {
               selectedChakra,
             )}
             onControllerMove={handleControllerMove}
+            audioContext={audioContext}
+            masterGainNode={masterGainNode}
           />
         )}
 

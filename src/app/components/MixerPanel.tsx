@@ -1,6 +1,8 @@
 import { TrackFader } from "./TrackFader";
 import { MandalaController } from "./MandalaController";
-import { Play, Pause, Sparkles } from "lucide-react";
+import { Play, Pause, Sparkles, Video } from "lucide-react";
+import { useState } from "react";
+import { VideoRecorder } from "./VideoRecorder";
 
 interface Track {
   id: number;
@@ -27,6 +29,8 @@ interface MixerPanelProps {
   loadError: string | null;
   controllerPosition?: { x: number; y: number };
   onControllerMove?: (x: number, y: number) => void;
+  audioContext?: AudioContext | null;
+  masterGainNode?: GainNode | null;
 }
 
 export function MixerPanel({ 
@@ -46,8 +50,12 @@ export function MixerPanel({
   loadingProgress,
   loadError,
   controllerPosition,
-  onControllerMove
+  onControllerMove,
+  audioContext,
+  masterGainNode
 }: MixerPanelProps) {
+  const [showVideoRecorder, setShowVideoRecorder] = useState(false);
+  
   const trackNames = [
     "Ambient Pad",
     "Singing Bowl",
@@ -189,6 +197,28 @@ export function MixerPanel({
         onControllerMove={onControllerMove}
         isAutoMixing={isAutoMixing}
       />
+
+      {/* Video Record Button - Works on Desktop & Mobile */}
+      <div className="mt-6 flex justify-center">
+        <button
+          onClick={() => setShowVideoRecorder(true)}
+          className="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg"
+          style={{ boxShadow: `0 0 20px ${chakraColor}60` }}
+        >
+          <Video className="w-5 h-5" />
+          <span>🎥 Record Video (50s)</span>
+        </button>
+      </div>
+
+      {/* Video Recorder Modal */}
+      {showVideoRecorder && (
+        <VideoRecorder
+          chakraColor={chakraColor}
+          audioContext={audioContext || null}
+          masterGainNode={masterGainNode || null}
+          onClose={() => setShowVideoRecorder(false)}
+        />
+      )}
     </div>
   );
 }
