@@ -1,0 +1,24 @@
+🎨 APP ICONS NEEDED FOR PWA INSTALLATION
+
+You need to create 2 icon files and place them here in /public/:
+
+📱 REQUIRED FILES:
+- icon-192.png (192 x 192 pixels)
+- icon-512.png (512 x 512 pixels)
+
+🎨 DESIGN IDEAS:
+- Mandala pattern with 7 chakra colors
+- Om symbol (ॐ) with purple/indigo gradient
+- Lotus flower design
+- Seven chakra symbols in a circle
+
+🚀 QUICK SOLUTION:
+1. Go to: https://www.pwabuilder.com/imageGenerator
+2. Upload any meditation/chakra image (at least 512x512)
+3. Download the generated icons
+4. Rename them to icon-192.png and icon-512.png
+5. Put them in this /public/ folder
+
+📖 Detailed guide: /public/icon-generation-guide.md
+
+⚠️ Until you add these icons, users won't be able to install the app on their phones.

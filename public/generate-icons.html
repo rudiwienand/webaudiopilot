@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icon Generator - Chakra Sound Meditation</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #020617;
+      color: white;
+    }
+    h1 { color: #a78bfa; }
+    .icon-preview {
+      display: flex;
+      gap: 30px;
+      margin: 30px 0;
+      align-items: center;
+    }
+    canvas {
+      border: 2px solid #7c3aed;
+      border-radius: 16px;
+    }
+    button {
+      background: #7c3aed;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px 10px 10px 0;
+    }
+    button:hover {
+      background: #8b5cf6;
+    }
+    .success {
+      background: #38A169;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      display: none;
+    }
+    .instructions {
+      background: rgba(124, 58, 237, 0.1);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #7c3aed;
+      margin: 20px 0;
+    }
+    code {
+      background: rgba(0,0,0,0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 Generate App Icons</h1>
+  
+  <div class="instructions">
+    <h3>📱 Instructions:</h3>
+    <ol>
+      <li>Click the buttons below to download <code>icon-192.png</code> and <code>icon-512.png</code></li>
+      <li>Place both files in the <code>/public/</code> folder of your project</li>
+      <li>Your app will now be installable on iPhone!</li>
+    </ol>
+  </div>
+
+  <div class="icon-preview">
+    <div>
+      <h3>192x192</h3>
+      <canvas id="canvas192" width="192" height="192"></canvas>
+    </div>
+    <div>
+      <h3>512x512</h3>
+      <canvas id="canvas512" width="512" height="512"></canvas>
+    </div>
+  </div>
+
+  <button onclick="downloadIcon(192)">⬇️ Download icon-192.png</button>
+  <button onclick="downloadIcon(512)">⬇️ Download icon-512.png</button>
+  <button onclick="downloadBoth()">⬇️ Download Both Icons</button>
+
+  <div class="success" id="success">
+    ✅ Icons downloaded! Now place them in the /public/ folder.
+  </div>
+
+  <script>
+    const svgContent = `
+      <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="512" height="512" fill="url(#gradient)"/>
+        <defs>
+          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:1" />
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <circle cx="256" cy="256" r="200" stroke="white" stroke-width="3" fill="none" opacity="0.3"/>
+        <circle cx="256" cy="256" r="180" stroke="white" stroke-width="2" fill="none" opacity="0.2"/>
+        <circle cx="256" cy="106" r="12" fill="#E53E3E" filter="url(#glow)"/>
+        <circle cx="370" cy="162" r="12" fill="#DD6B20" filter="url(#glow)"/>
+        <circle cx="398" cy="286" r="12" fill="#D69E2E" filter="url(#glow)"/>
+        <circle cx="340" cy="390" r="12" fill="#38A169" filter="url(#glow)"/>
+        <circle cx="172" cy="390" r="12" fill="#3182CE" filter="url(#glow)"/>
+        <circle cx="114" cy="286" r="12" fill="#5A67D8" filter="url(#glow)"/>
+        <circle cx="142" cy="162" r="12" fill="#805AD5" filter="url(#glow)"/>
+        <g transform="translate(256, 256)">
+          <path d="M 0,-60 L 14,-20 L 54,-35 L 20,-5 L 42,28 L 0,8 L -42,28 L -20,-5 L -54,-35 L -14,-20 Z" 
+                fill="white" opacity="0.9" filter="url(#glow)"/>
+          <circle cx="0" cy="0" r="18" fill="white" opacity="0.95"/>
+          <circle cx="0" cy="0" r="12" fill="#7c3aed" opacity="0.8"/>
+        </g>
+        <circle cx="256" cy="256" r="100" stroke="white" stroke-width="1" fill="none" opacity="0.15" stroke-dasharray="5,5"/>
+        <circle cx="256" cy="256" r="140" stroke="white" stroke-width="1" fill="none" opacity="0.1" stroke-dasharray="8,8"/>
+      </svg>
+    `;
+
+    function renderIcon(size) {
+      const canvas = document.getElementById(`canvas${size}`);
+      const ctx = canvas.getContext('2d');
+      
+      const img = new Image();
+      const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = function() {
+        ctx.drawImage(img, 0, 0, size, size);
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
+
+    function downloadIcon(size) {
+      const canvas = document.getElementById(`canvas${size}`);
+      canvas.toBlob(function(blob) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `icon-${size}.png`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        document.getElementById('success').style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('success').style.display = 'none';
+        }, 3000);
+      }, 'image/png');
+    }
+
+    function downloadBoth() {
+      downloadIcon(192);
+      setTimeout(() => downloadIcon(512), 500);
+    }
+
+    // Render icons on page load
+    window.addEventListener('load', () => {
+      renderIcon(192);
+      renderIcon(512);
+    });
+  </script>
+</body>
+</html>
