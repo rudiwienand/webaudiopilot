@@ -243,7 +243,7 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
       ctx.fillText(`${countdown}s`, width / 2 + 10, halfHeight + 12);
     }
   };
-
+  // Fixed codec fallback
   const startRecording = async () => {
     if (!canvasRef.current || !audioContext) {
       setCameraError('Recording setup failed. Please try again.');
