@@ -1,5 +1,5 @@
- { useState, useRef, useEffect } from 'react';
- { Video, X, Download, Share2, Trash2, Circle } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Video, X, Download, Share2, Trash2, Circle } from 'lucide-react';
 
 interface VideoRecorderProps {
   chakraColor: string;
