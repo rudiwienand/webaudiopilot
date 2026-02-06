@@ -462,9 +462,22 @@ export function VideoRecorder({
 
       mediaRecorder.onstop = () => {
         console.log('Recording complete');
+        console.log('Chunks collected:', chunksRef.current.length);
+        console.log('Total size:', chunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0), 'bytes');
+        
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        console.log('Final blob size:', blob.size);
+        
         setVideoBlob(blob);
         setRecordingState('complete');
+        
+        // Immediately set up preview
+        if (previewVideoRef.current) {
+          const url = URL.createObjectURL(blob);
+          console.log('Preview URL created:', url);
+          previewVideoRef.current.src = url;
+          previewVideoRef.current.load(); // Force load
+        }
       };
 
       mediaRecorder.onerror = (e) => {
@@ -473,7 +486,7 @@ export function VideoRecorder({
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
+      mediaRecorder.start(100); // Request data every 100ms for smoother recording
       console.log('Recording started!');
       setRecordingState('recording');
       setCountdown(RECORDING_DURATION);
@@ -563,15 +576,6 @@ export function VideoRecorder({
     setRecordingState('setup');
     setCountdown(RECORDING_DURATION);
   };
-
-  // Preview mode
-  useEffect(() => {
-    if (recordingState === 'complete' && videoBlob && previewVideoRef.current) {
-      const url = URL.createObjectURL(videoBlob);
-      previewVideoRef.current.src = url;
-      return () => URL.revokeObjectURL(url);
-    }
-  }, [recordingState, videoBlob]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
