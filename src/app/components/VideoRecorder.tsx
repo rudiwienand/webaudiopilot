@@ -243,8 +243,11 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
       ctx.fillText(`${countdown}s`, width / 2 + 10, halfHeight + 12);
     }
   };
-  // Fixed codec fallback
+
+  // Fixed codec fallback - tries multiple codecs until one works
   const startRecording = async () => {
+    console.log('=== STARTING RECORDING ===');
+    
     if (!canvasRef.current || !audioContext) {
       setCameraError('Recording setup failed. Please try again.');
       return;
@@ -255,50 +258,92 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
       canvas.width = 1280;
       canvas.height = 1440; // Taller to fit both sections
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        setCameraError('Canvas failed to initialize');
+        return;
+      }
 
       // Capture canvas stream
       const canvasStream = canvas.captureStream(30); // 30 FPS
+      console.log('Canvas stream created');
 
       // Capture audio from Web Audio API
       let finalStream = canvasStream;
       if (audioContext && audioContext.state === 'running' && masterGainNode) {
         try {
           const destination = audioContext.createMediaStreamDestination();
-          // Connect the audio context to the destination
           masterGainNode.connect(destination);
           finalStream = new MediaStream([
             ...canvasStream.getVideoTracks(),
             ...destination.stream.getAudioTracks()
           ]);
+          console.log('Audio added to stream');
         } catch (audioErr) {
           console.warn('Could not capture audio:', audioErr);
-          // Continue with video only
         }
       }
 
-      // Start MediaRecorder
-      const mediaRecorder = new MediaRecorder(finalStream, {
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 2500000
-      });
+      // Try different codecs until one works
+      const codecsToTry = [
+        { mimeType: 'video/webm;codecs=vp8', bitrate: 2500000 },
+        { mimeType: 'video/webm', bitrate: 2500000 },
+        { mimeType: 'video/mp4', bitrate: 2500000 },
+        { mimeType: '', bitrate: 2500000 }
+      ];
+
+      let mediaRecorder: MediaRecorder | null = null;
+      let workingCodec = '';
+
+      for (const codec of codecsToTry) {
+        try {
+          console.log('Trying codec:', codec.mimeType || 'browser default');
+          
+          const options: any = {
+            videoBitsPerSecond: codec.bitrate
+          };
+          
+          if (codec.mimeType) {
+            options.mimeType = codec.mimeType;
+          }
+
+          mediaRecorder = new MediaRecorder(finalStream, options);
+          workingCodec = codec.mimeType || 'default';
+          console.log('✅ Success! Using:', workingCodec);
+          break;
+        } catch (err) {
+          console.warn('❌ Failed:', codec.mimeType, err);
+          continue;
+        }
+      }
+
+      if (!mediaRecorder) {
+        throw new Error('No supported video codec found');
+      }
 
       chunksRef.current = [];
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
+          console.log('Chunk:', e.data.size, 'bytes');
         }
       };
 
       mediaRecorder.onstop = () => {
+        console.log('Recording complete');
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
         setVideoBlob(blob);
         setRecordingState('complete');
       };
 
+      mediaRecorder.onerror = (e) => {
+        console.error('MediaRecorder error:', e);
+        setCameraError('Recording error occurred');
+      };
+
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
+      console.log('Recording started!');
       setRecordingState('recording');
       setCountdown(RECORDING_DURATION);
 
@@ -322,6 +367,7 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
 
     } catch (err) {
       console.error('Recording error:', err);
+      console.error('Details:', err instanceof Error ? err.message : err);
       setCameraError('Failed to start recording. Please try again.');
     }
   };
@@ -542,7 +588,6 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
           {/* Chakra controller - bottom half */}
           <div 
             className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden"
-            data-mandala-controller
           >
             <div className="text-white/50 text-center p-8">
               <p className="text-2xl mb-2">🧘‍♀️</p>
