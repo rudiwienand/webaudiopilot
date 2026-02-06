@@ -340,12 +340,12 @@ export function VideoRecorder({
         }
       }
 
-      // Try different codecs until one works
+      // Try different codecs until one works - INCLUDE AUDIO CODEC
       const codecsToTry = [
-        { mimeType: 'video/webm;codecs=vp8', bitrate: 2500000 },
-        { mimeType: 'video/webm', bitrate: 2500000 },
-        { mimeType: 'video/mp4', bitrate: 2500000 },
-        { mimeType: '', bitrate: 2500000 }
+        { mimeType: 'video/webm;codecs=vp8,opus', bitrate: 2500000 }, // VP8 video + Opus audio
+        { mimeType: 'video/webm;codecs=vp9,opus', bitrate: 2500000 }, // VP9 video + Opus audio
+        { mimeType: 'video/webm', bitrate: 2500000 }, // Let browser choose
+        { mimeType: '', bitrate: 2500000 } // Browser default
       ];
 
       let mediaRecorder: MediaRecorder | null = null;
