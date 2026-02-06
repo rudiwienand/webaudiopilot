@@ -512,13 +512,9 @@ export function VideoRecorder({
               previewVideoRef.current.src = url;
               previewVideoRef.current.load();
               
-              // Try to play
-              previewVideoRef.current.play().then(() => {
-                console.log('✅ Video playback started');
-              }).catch((err) => {
-                console.error('❌ Video playback failed:', err);
-                setCameraError('Video created but playback failed. Try downloading instead.');
-              });
+              // DON'T auto-play on mobile - let user tap play button
+              // This avoids codec/playback errors
+              console.log('✅ Video ready for playback (user must tap play)');
             }
           }, 100);
         }, 100);
@@ -717,6 +713,17 @@ export function VideoRecorder({
               className="max-w-full max-h-full"
               autoPlay
               loop
+              playsInline
+              muted
+              preload="auto"
+              onError={(e) => {
+                console.error('Video element error:', e);
+                const videoEl = e.currentTarget;
+                console.error('Video error code:', videoEl.error?.code);
+                console.error('Video error message:', videoEl.error?.message);
+              }}
+              onCanPlay={() => console.log('Video can play')}
+              onLoadedData={() => console.log('Video data loaded')}
             />
           </div>
 
