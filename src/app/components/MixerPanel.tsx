@@ -217,6 +217,17 @@ export function MixerPanel({
           audioContext={audioContext || null}
           masterGainNode={masterGainNode || null}
           onClose={() => setShowVideoRecorder(false)}
+          onStartPlayback={() => {
+            // Auto-start playback when recording starts
+            if (!isChakraPlaying) {
+              onToggleChakraPlay();
+            }
+          }}
+          tracks={tracks}
+          onVolumeChange={onVolumeChange}
+          controllerPosition={controllerPosition}
+          onControllerMove={onControllerMove}
+          isAutoMixing={isAutoMixing}
         />
       )}
     </div>
