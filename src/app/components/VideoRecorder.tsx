@@ -646,16 +646,23 @@ export function VideoRecorder({
             className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden p-4"
           >
             {/* Render the actual mandala controller here so user can interact with it */}
-            <div className="w-full max-w-md">
-              <MandalaController
-                tracks={tracks}
-                onVolumeChange={onVolumeChange}
-                chakraColor={chakraColor}
-                controllerPosition={controllerPosition}
-                onControllerMove={onControllerMove}
-                isAutoMixing={isAutoMixing}
-              />
-            </div>
+            {tracks && tracks.length > 0 ? (
+              <div className="w-full max-w-md">
+                <MandalaController
+                  tracks={tracks}
+                  onVolumeChange={onVolumeChange}
+                  chakraColor={chakraColor}
+                  controllerPosition={controllerPosition}
+                  onControllerMove={onControllerMove}
+                  isAutoMixing={isAutoMixing}
+                />
+              </div>
+            ) : (
+              <div className="text-white/50 text-center p-8">
+                <p className="text-2xl mb-2">🧘‍♀️</p>
+                <p>Loading controller...</p>
+              </div>
+            )}
           </div>
 
           {/* Hidden canvas for recording */}
