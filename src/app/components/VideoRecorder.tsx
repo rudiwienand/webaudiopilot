@@ -1,5 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Video, X, Download, Share2, Trash2, Circle, Square } from 'lucide-react';
+import { MandalaController } from './MandalaController';
+
+interface Track {
+  id: number;
+  name: string;
+  volume: number;
+  isPlaying: boolean;
+}
 
 interface VideoRecorderProps {
   chakraColor: string;
@@ -7,9 +15,25 @@ interface VideoRecorderProps {
   masterGainNode: GainNode | null;
   onClose: () => void;
   onStartPlayback?: () => void;
+  tracks: Track[];
+  onVolumeChange: (trackId: number, volume: number) => void;
+  controllerPosition?: { x: number; y: number };
+  onControllerMove?: (x: number, y: number) => void;
+  isAutoMixing: boolean;
 }
 
-export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClose, onStartPlayback }: VideoRecorderProps) {
+export function VideoRecorder({ 
+  chakraColor, 
+  audioContext, 
+  masterGainNode, 
+  onClose, 
+  onStartPlayback,
+  tracks,
+  onVolumeChange,
+  controllerPosition,
+  onControllerMove,
+  isAutoMixing
+}: VideoRecorderProps) {
   const RECORDING_DURATION = 50; // in seconds
   const [recordingState, setRecordingState] = useState<'setup' | 'recording' | 'complete'>('setup');
   const [countdown, setCountdown] = useState(RECORDING_DURATION);
@@ -251,9 +275,12 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
   // Fixed codec fallback - tries multiple codecs until one works
   const startRecording = async () => {
     console.log('=== STARTING RECORDING ===');
+    console.log('Canvas ref:', canvasRef.current);
+    console.log('Audio context:', audioContext);
+    console.log('Audio context state:', audioContext?.state);
     
-    if (!canvasRef.current || !audioContext) {
-      setCameraError('Recording setup failed. Please try again.');
+    if (!canvasRef.current) {
+      setCameraError('Canvas not ready. Please try again.');
       return;
     }
 
@@ -261,6 +288,15 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
     if (onStartPlayback) {
       console.log('Auto-starting audio playback...');
       onStartPlayback();
+      
+      // Wait a bit for audio context to start
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Resume audio context if it's suspended
+    if (audioContext && audioContext.state === 'suspended') {
+      console.log('Resuming audio context...');
+      await audioContext.resume();
     }
 
     try {
@@ -607,14 +643,18 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
 
           {/* Chakra controller - bottom half */}
           <div 
-            className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden"
+            className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden p-4"
           >
-            <div className="text-white/50 text-center p-8">
-              <p className="text-2xl mb-2">🧘‍♀️</p>
-              <p>Chakra Controller View</p>
-              <p className="text-sm mt-2 text-white/30">
-                (Your mandala controller will appear here)
-              </p>
+            {/* Render the actual mandala controller here so user can interact with it */}
+            <div className="w-full max-w-md">
+              <MandalaController
+                tracks={tracks}
+                onVolumeChange={onVolumeChange}
+                chakraColor={chakraColor}
+                controllerPosition={controllerPosition}
+                onControllerMove={onControllerMove}
+                isAutoMixing={isAutoMixing}
+              />
             </div>
           </div>
 
