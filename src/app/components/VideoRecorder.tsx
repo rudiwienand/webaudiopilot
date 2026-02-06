@@ -757,7 +757,7 @@ export function VideoRecorder({
       {/* Recording mode */}
       {(recordingState === 'setup' || recordingState === 'recording') && (
         <div className="flex-1 flex flex-col relative">
-          {/* Camera feed - top half */}
+          {/* Camera feed - top half - ALWAYS VISIBLE */}
           <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
             <video
               ref={videoRef}
@@ -767,18 +767,33 @@ export function VideoRecorder({
               className="w-full h-full object-cover"
             />
             
+            {/* Camera loading indicator */}
+            {(!streamRef.current || !videoRef.current || videoRef.current.readyState < 2) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <div className="text-white text-center">
+                  <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p>Loading camera...</p>
+                </div>
+              </div>
+            )}
+            
             {/* Record button - MOVED INSIDE CAMERA VIEW FOR MOBILE VISIBILITY */}
             {recordingState === 'setup' && (
               <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
                 <div className="pointer-events-auto">
                   <button
                     onClick={startRecording}
-                    className="w-24 h-24 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-2xl transition-all hover:scale-110"
+                    disabled={!streamRef.current || !videoRef.current || videoRef.current.readyState < 2}
+                    className="w-24 h-24 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-2xl transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ boxShadow: `0 0 40px ${chakraColor}80` }}
                   >
                     <Circle className="w-16 h-16 text-white fill-white" />
                   </button>
-                  <p className="text-white text-center mt-4 text-sm font-semibold drop-shadow-lg">Tap to Record (50s)</p>
+                  <p className="text-white text-center mt-4 text-sm font-semibold drop-shadow-lg">
+                    {(!streamRef.current || !videoRef.current || videoRef.current.readyState < 2) 
+                      ? 'Waiting for camera...' 
+                      : 'Tap to Record (50s)'}
+                  </p>
                 </div>
               </div>
             )}
