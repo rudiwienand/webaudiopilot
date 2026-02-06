@@ -349,53 +349,41 @@ export function VideoRecorder({
         }
       }
 
-      // Try different codecs until one works - TEST FIRST, THEN USE
+      // Try different codecs until one works - INCLUDE AUDIO CODEC
       const codecsToTry = [
-        'video/webm', // Let browser choose (most compatible)
-        'video/webm;codecs=vp8,opus', // VP8 video + Opus audio
-        'video/webm;codecs=vp9,opus', // VP9 video + Opus audio  
-        '' // Browser default
+        { mimeType: 'video/webm;codecs=vp8,opus', bitrate: 2500000 }, // VP8 video + Opus audio
+        { mimeType: 'video/webm;codecs=vp9,opus', bitrate: 2500000 }, // VP9 video + Opus audio
+        { mimeType: 'video/webm', bitrate: 2500000 }, // Let browser choose
+        { mimeType: '', bitrate: 2500000 } // Browser default
       ];
 
       let mediaRecorder: MediaRecorder | null = null;
       let workingCodec = '';
 
-      for (const mimeType of codecsToTry) {
-        // First, check if this codec is supported
-        const isSupported = mimeType === '' || MediaRecorder.isTypeSupported(mimeType);
-        console.log(`Testing codec: "${mimeType || 'default'}" - Supported: ${isSupported}`);
-        
-        if (!isSupported) {
-          console.warn(`❌ Skipped: ${mimeType} - not supported`);
-          continue;
-        }
-
+      for (const codec of codecsToTry) {
         try {
-          const options: any = { videoBitsPerSecond: 2500000 };
-          if (mimeType) {
-            options.mimeType = mimeType;
+          console.log('Trying codec:', codec.mimeType || 'browser default');
+          
+          const options: any = {
+            videoBitsPerSecond: codec.bitrate
+          };
+          
+          if (codec.mimeType) {
+            options.mimeType = codec.mimeType;
           }
 
-          // Try to create MediaRecorder
-          const testRecorder = new MediaRecorder(finalStream, options);
-          
-          // Try to start it immediately to catch codec errors early
-          testRecorder.start();
-          testRecorder.stop();
-          
-          // If we got here, it works!
           mediaRecorder = new MediaRecorder(finalStream, options);
-          workingCodec = mimeType || 'default';
+          workingCodec = codec.mimeType || 'default';
           console.log('✅ Success! Using:', workingCodec);
           break;
         } catch (err) {
-          console.warn('❌ Failed to use:', mimeType, err);
+          console.warn('❌ Failed:', codec.mimeType, err);
           continue;
         }
       }
 
       if (!mediaRecorder) {
-        throw new Error('No supported video codec found. Browser may not support video recording.');
+        throw new Error('No supported video codec found');
       }
 
       chunksRef.current = [];
