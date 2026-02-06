@@ -50,11 +50,20 @@ export function VideoRecorder({
   const animationFrameRef = useRef<number | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Ensure tracks always exists (create default if needed)
+  const safeTracks = tracks && tracks.length > 0 ? tracks : Array.from({ length: 9 }, (_, i) => ({
+    id: i + 1,
+    name: `Track ${i + 1}`,
+    volume: 0.5,
+    isPlaying: false
+  }));
+
   // Debug: Log props on mount
   useEffect(() => {
     console.log('VideoRecorder mounted with props:', {
       tracksLength: tracks?.length,
       tracks: tracks,
+      safeTracksLength: safeTracks.length,
       audioContext: audioContext,
       masterGainNode: masterGainNode,
       controllerPosition: controllerPosition
@@ -656,24 +665,25 @@ export function VideoRecorder({
           <div 
             className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden p-4"
           >
-            {/* Render the actual mandala controller here so user can interact with it */}
-            {tracks && tracks.length > 0 ? (
-              <div className="w-full max-w-md">
-                <MandalaController
-                  tracks={tracks}
-                  onVolumeChange={onVolumeChange}
-                  chakraColor={chakraColor}
-                  controllerPosition={controllerPosition}
-                  onControllerMove={onControllerMove}
-                  isAutoMixing={isAutoMixing}
-                />
-              </div>
-            ) : (
-              <div className="text-white/50 text-center p-8">
-                <p className="text-2xl mb-2">🧘‍♀️</p>
-                <p>Loading controller...</p>
-              </div>
-            )}
+            {/* Debug info for troubleshooting */}
+            <div className="absolute bottom-20 left-4 z-50 bg-yellow-500/90 text-black p-3 rounded text-xs max-w-xs">
+              <p>SafeTracks: {safeTracks.length}</p>
+              <p>Tracks passed: {tracks?.length || 0}</p>
+              <p>Controller rendered: YES</p>
+            </div>
+            
+            {/* Always render the mandala controller */}
+            <div className="w-full max-w-md bg-red-500/20 p-4 rounded-lg">
+              <p className="text-white text-center mb-2">Controller Container</p>
+              <MandalaController
+                tracks={safeTracks}
+                onVolumeChange={onVolumeChange}
+                chakraColor={chakraColor}
+                controllerPosition={controllerPosition}
+                onControllerMove={onControllerMove}
+                isAutoMixing={isAutoMixing}
+              />
+            </div>
           </div>
 
           {/* Hidden canvas for recording */}
