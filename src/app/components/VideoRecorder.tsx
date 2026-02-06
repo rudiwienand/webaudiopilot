@@ -673,9 +673,9 @@ export function VideoRecorder({
 
       {/* Recording mode */}
       {(recordingState === 'setup' || recordingState === 'recording') && (
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col relative">
           {/* Camera feed - top half */}
-          <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
+          <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
             <video
               ref={videoRef}
               autoPlay
@@ -683,49 +683,53 @@ export function VideoRecorder({
               muted
               className="w-full h-full object-cover"
             />
+            
+            {/* Record button - MOVED INSIDE CAMERA VIEW FOR MOBILE VISIBILITY */}
+            {recordingState === 'setup' && (
+              <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+                <div className="pointer-events-auto">
+                  <button
+                    onClick={startRecording}
+                    className="w-24 h-24 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-2xl transition-all hover:scale-110"
+                    style={{ boxShadow: `0 0 40px ${chakraColor}80` }}
+                  >
+                    <Circle className="w-16 h-16 text-white fill-white" />
+                  </button>
+                  <p className="text-white text-center mt-4 text-sm font-semibold drop-shadow-lg">Tap to Record (50s)</p>
+                </div>
+              </div>
+            )}
+
+            {/* Countdown timer - ALSO IN CAMERA VIEW */}
+            {recordingState === 'recording' && (
+              <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+                <div className="bg-black/70 px-8 py-4 rounded-2xl">
+                  <p className="text-red-500 text-6xl font-bold font-mono tabular-nums">
+                    {countdown}
+                  </p>
+                  <p className="text-white/70 text-center text-sm mt-2">Recording...</p>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Record button - center */}
-          {recordingState === 'setup' && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
-              <button
-                onClick={startRecording}
-                className="w-24 h-24 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-2xl transition-all hover:scale-110"
-                style={{ boxShadow: `0 0 40px ${chakraColor}80` }}
-              >
-                <Circle className="w-16 h-16 text-white fill-white" />
-              </button>
-              <p className="text-white text-center mt-4 text-sm">Tap to Record (50s)</p>
-            </div>
-          )}
-
-          {/* Countdown timer */}
-          {recordingState === 'recording' && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 bg-black/70 px-8 py-4 rounded-2xl">
-              <p className="text-red-500 text-6xl font-bold font-mono tabular-nums">
-                {countdown}
-              </p>
-              <p className="text-white/70 text-center text-sm mt-2">Recording...</p>
-            </div>
-          )}
 
           {/* Stop button - ON THE DIVIDING LINE */}
           {recordingState === 'recording' && (
-            <button
-              onClick={stopRecording}
-              className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 z-50 w-20 h-20 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center shadow-2xl transition-all hover:scale-110"
-              style={{ boxShadow: `0 0 30px ${chakraColor}` }}
-            >
-              <Square className="w-10 h-10 text-red-600 fill-red-600" />
-            </button>
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex items-center justify-center z-50 pointer-events-none">
+              <button
+                onClick={stopRecording}
+                className="pointer-events-auto w-20 h-20 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center shadow-2xl transition-all hover:scale-110"
+                style={{ boxShadow: `0 0 30px ${chakraColor}` }}
+              >
+                <Square className="w-10 h-10 text-red-600 fill-red-600" />
+              </button>
+            </div>
           )}
 
-          {/* Chakra controller - bottom half */}
-          <div 
-            className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden p-4"
-          >
-            {/* Always render the mandala controller */}
-            <div className="w-full max-w-md">
+          {/* Chakra controller - bottom half - ISOLATED */}
+          <div className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden p-4 relative">
+            {/* Single mandala controller */}
+            <div className="w-full h-full max-w-md max-h-full flex items-center justify-center">
               <MandalaController
                 tracks={safeTracks}
                 onVolumeChange={onVolumeChange}
