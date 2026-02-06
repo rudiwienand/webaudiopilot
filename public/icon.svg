@@ -1,0 +1,49 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#gradient)"/>
+  
+  <!-- Gradient Definition -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Outer Circle (Sacred Geometry) -->
+  <circle cx="256" cy="256" r="200" stroke="white" stroke-width="3" fill="none" opacity="0.3"/>
+  <circle cx="256" cy="256" r="180" stroke="white" stroke-width="2" fill="none" opacity="0.2"/>
+  
+  <!-- 7 Chakra Dots in Circle -->
+  <circle cx="256" cy="106" r="12" fill="#E53E3E" filter="url(#glow)"/>  <!-- Crown - Red -->
+  <circle cx="370" cy="162" r="12" fill="#DD6B20" filter="url(#glow)"/>  <!-- Third Eye - Orange -->
+  <circle cx="398" cy="286" r="12" fill="#D69E2E" filter="url(#glow)"/>  <!-- Throat - Yellow -->
+  <circle cx="340" cy="390" r="12" fill="#38A169" filter="url(#glow)"/>  <!-- Heart - Green -->
+  <circle cx="172" cy="390" r="12" fill="#3182CE" filter="url(#glow)"/>  <!-- Solar - Blue -->
+  <circle cx="114" cy="286" r="12" fill="#5A67D8" filter="url(#glow)"/>  <!-- Sacral - Indigo -->
+  <circle cx="142" cy="162" r="12" fill="#805AD5" filter="url(#glow)"/>  <!-- Root - Violet -->
+  
+  <!-- Center Mandala Star -->
+  <g transform="translate(256, 256)">
+    <!-- 9-pointed star -->
+    <path d="M 0,-60 L 14,-20 L 54,-35 L 20,-5 L 42,28 L 0,8 L -42,28 L -20,-5 L -54,-35 L -14,-20 Z" 
+          fill="white" opacity="0.9" filter="url(#glow)"/>
+    
+    <!-- Center circle -->
+    <circle cx="0" cy="0" r="18" fill="white" opacity="0.95"/>
+    <circle cx="0" cy="0" r="12" fill="#7c3aed" opacity="0.8"/>
+  </g>
+  
+  <!-- Decorative circles around center -->
+  <circle cx="256" cy="256" r="100" stroke="white" stroke-width="1" fill="none" opacity="0.15" stroke-dasharray="5,5"/>
+  <circle cx="256" cy="256" r="140" stroke="white" stroke-width="1" fill="none" opacity="0.1" stroke-dasharray="8,8"/>
+</svg>
