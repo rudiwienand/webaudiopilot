@@ -223,6 +223,13 @@ export function MixerPanel({
               onToggleChakraPlay();
             }
           }}
+          onStopPlayback={() => {
+            // Stop playback when recording stops
+            if (isChakraPlaying) {
+              onToggleChakraPlay();
+            }
+          }}
+          isChakraPlaying={isChakraPlaying}
           tracks={tracks}
           onVolumeChange={onVolumeChange}
           controllerPosition={controllerPosition}

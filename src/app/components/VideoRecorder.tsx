@@ -15,6 +15,8 @@ interface VideoRecorderProps {
   masterGainNode: GainNode | null;
   onClose: () => void;
   onStartPlayback?: () => void;
+  onStopPlayback?: () => void;
+  isChakraPlaying: boolean;
   tracks: Track[];
   onVolumeChange: (trackId: number, volume: number) => void;
   controllerPosition?: { x: number; y: number };
@@ -28,6 +30,8 @@ export function VideoRecorder({
   masterGainNode, 
   onClose, 
   onStartPlayback,
+  onStopPlayback,
+  isChakraPlaying,
   tracks,
   onVolumeChange,
   controllerPosition,
@@ -249,28 +253,65 @@ export function VideoRecorder({
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Draw watermark (bottom right)
-    const watermarkHeight = 60;
-    const watermarkPadding = 20;
+    // Draw watermark (bottom right) - ENHANCED with gradient and glow
+    const watermarkHeight = 70;
+    const watermarkPadding = 15;
+    const watermarkWidth = 320;
     
-    // Semi-transparent background for watermark
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(
-      width - 280 - watermarkPadding,
+    // Gradient background for watermark
+    const gradient = ctx.createLinearGradient(
+      width - watermarkWidth - watermarkPadding,
       height - watermarkHeight - watermarkPadding,
-      280,
+      width - watermarkPadding,
+      height - watermarkPadding
+    );
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.8)'); // Blue
+    gradient.addColorStop(0.5, 'rgba(147, 51, 234, 0.8)'); // Purple
+    gradient.addColorStop(1, 'rgba(236, 72, 153, 0.8)'); // Pink
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(
+      width - watermarkWidth - watermarkPadding,
+      height - watermarkHeight - watermarkPadding,
+      watermarkWidth,
       watermarkHeight
     );
 
-    // Watermark text
+    // Border glow
+    ctx.strokeStyle = chakraColor;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+      width - watermarkWidth - watermarkPadding,
+      height - watermarkHeight - watermarkPadding,
+      watermarkWidth,
+      watermarkHeight
+    );
+
+    // Watermark text with shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 22px Arial';
+    ctx.font = 'bold 26px Arial';
     ctx.textAlign = 'right';
     ctx.fillText(
       'SoundMeditationPilot',
-      width - watermarkPadding - 10,
-      height - watermarkPadding - 20
+      width - watermarkPadding - 15,
+      height - watermarkPadding - 35
     );
+    
+    // Subtitle
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#ffffffcc';
+    ctx.fillText(
+      '🧘 Chakra Sound Mixing',
+      width - watermarkPadding - 15,
+      height - watermarkPadding - 12
+    );
+    ctx.restore();
 
     // If recording, show timer
     if (recordingState === 'recording') {
@@ -349,41 +390,53 @@ export function VideoRecorder({
         }
       }
 
-      // Try different codecs until one works - INCLUDE AUDIO CODEC
+      // Try different codecs until one works - TEST FIRST, THEN USE
       const codecsToTry = [
-        { mimeType: 'video/webm;codecs=vp8,opus', bitrate: 2500000 }, // VP8 video + Opus audio
-        { mimeType: 'video/webm;codecs=vp9,opus', bitrate: 2500000 }, // VP9 video + Opus audio
-        { mimeType: 'video/webm', bitrate: 2500000 }, // Let browser choose
-        { mimeType: '', bitrate: 2500000 } // Browser default
+        'video/webm', // Let browser choose (most compatible)
+        'video/webm;codecs=vp8,opus', // VP8 video + Opus audio
+        'video/webm;codecs=vp9,opus', // VP9 video + Opus audio  
+        '' // Browser default
       ];
 
       let mediaRecorder: MediaRecorder | null = null;
       let workingCodec = '';
 
-      for (const codec of codecsToTry) {
+      for (const mimeType of codecsToTry) {
+        // First, check if this codec is supported
+        const isSupported = mimeType === '' || MediaRecorder.isTypeSupported(mimeType);
+        console.log(`Testing codec: "${mimeType || 'default'}" - Supported: ${isSupported}`);
+        
+        if (!isSupported) {
+          console.warn(`❌ Skipped: ${mimeType} - not supported`);
+          continue;
+        }
+
         try {
-          console.log('Trying codec:', codec.mimeType || 'browser default');
-          
-          const options: any = {
-            videoBitsPerSecond: codec.bitrate
-          };
-          
-          if (codec.mimeType) {
-            options.mimeType = codec.mimeType;
+          const options: any = { videoBitsPerSecond: 2500000 };
+          if (mimeType) {
+            options.mimeType = mimeType;
           }
 
+          // Try to create MediaRecorder
+          const testRecorder = new MediaRecorder(finalStream, options);
+          
+          // Try to start it immediately to catch codec errors early
+          testRecorder.start();
+          testRecorder.stop();
+          
+          // If we got here, it works!
           mediaRecorder = new MediaRecorder(finalStream, options);
-          workingCodec = codec.mimeType || 'default';
+          workingCodec = mimeType || 'default';
           console.log('✅ Success! Using:', workingCodec);
           break;
         } catch (err) {
-          console.warn('❌ Failed:', codec.mimeType, err);
+          console.warn('❌ Failed to use:', mimeType, err);
           continue;
         }
       }
 
       if (!mediaRecorder) {
-        throw new Error('No supported video codec found');
+        throw new Error('No supported video codec found. Browser may not support video recording.');
       }
 
       chunksRef.current = [];
@@ -447,6 +500,11 @@ export function VideoRecorder({
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
+    }
+    
+    // Stop audio playback when recording stops
+    if (onStopPlayback) {
+      onStopPlayback(); // Toggle to stop
     }
   };
 
@@ -651,13 +709,14 @@ export function VideoRecorder({
             </div>
           )}
 
-          {/* Stop button - bottom center */}
+          {/* Stop button - ON THE DIVIDING LINE */}
           {recordingState === 'recording' && (
             <button
               onClick={stopRecording}
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 w-16 h-16 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-2xl transition-all hover:scale-110"
+              className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 z-50 w-20 h-20 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center shadow-2xl transition-all hover:scale-110"
+              style={{ boxShadow: `0 0 30px ${chakraColor}` }}
             >
-              <Square className="w-8 h-8 text-red-600 fill-red-600" />
+              <Square className="w-10 h-10 text-red-600 fill-red-600" />
             </button>
           )}
 
@@ -665,16 +724,8 @@ export function VideoRecorder({
           <div 
             className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden p-4"
           >
-            {/* Debug info for troubleshooting */}
-            <div className="absolute bottom-20 left-4 z-50 bg-yellow-500/90 text-black p-3 rounded text-xs max-w-xs">
-              <p>SafeTracks: {safeTracks.length}</p>
-              <p>Tracks passed: {tracks?.length || 0}</p>
-              <p>Controller rendered: YES</p>
-            </div>
-            
             {/* Always render the mandala controller */}
-            <div className="w-full max-w-md bg-red-500/20 p-4 rounded-lg">
-              <p className="text-white text-center mb-2">Controller Container</p>
+            <div className="w-full max-w-md">
               <MandalaController
                 tracks={safeTracks}
                 onVolumeChange={onVolumeChange}
