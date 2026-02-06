@@ -200,15 +200,21 @@ export function VideoRecorder({
     // Draw camera feed on top half
     if (videoRef.current && videoRef.current.readyState >= 2) {
       ctx.drawImage(videoRef.current, 0, 0, width, halfHeight);
+    } else {
+      // Red indicator if camera not ready
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(0, 0, width, halfHeight);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '40px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Camera not ready', width / 2, halfHeight / 2);
     }
 
     // Draw chakra controller on bottom half - CAPTURE ONLY VIDEO RECORDER CANVAS
     const videoRecorderContainer = document.querySelector('[data-video-recorder-mandala="true"]');
     const mandalaCanvas = videoRecorderContainer?.querySelector('[data-mandala-controller]') as HTMLCanvasElement;
-    console.log('🔍 Looking for video recorder mandala canvas...', mandalaCanvas);
     
     if (mandalaCanvas && mandalaCanvas instanceof HTMLCanvasElement) {
-      console.log('✅ Found mandala canvas:', mandalaCanvas.width, 'x', mandalaCanvas.height);
       // Draw the actual mandala canvas scaled to fit bottom half
       try {
         ctx.save();
@@ -461,23 +467,61 @@ export function VideoRecorder({
       };
 
       mediaRecorder.onstop = () => {
-        console.log('Recording complete');
+        console.log('=== RECORDING STOPPED ===');
         console.log('Chunks collected:', chunksRef.current.length);
-        console.log('Total size:', chunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0), 'bytes');
+        
+        if (chunksRef.current.length === 0) {
+          console.error('❌ NO CHUNKS COLLECTED!');
+          setCameraError('Recording failed - no data captured. Please try again.');
+          setRecordingState('setup');
+          return;
+        }
+        
+        const totalSize = chunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0);
+        console.log('Total size:', totalSize, 'bytes');
+        
+        if (totalSize === 0) {
+          console.error('❌ EMPTY CHUNKS!');
+          setCameraError('Recording failed - no video data. Please try again.');
+          setRecordingState('setup');
+          return;
+        }
         
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-        console.log('Final blob size:', blob.size);
+        console.log('Final blob created:', blob.size, 'bytes');
+        console.log('Blob type:', blob.type);
+        
+        if (blob.size === 0) {
+          console.error('❌ EMPTY BLOB!');
+          setCameraError('Recording failed - empty video file. Please try again.');
+          setRecordingState('setup');
+          return;
+        }
         
         setVideoBlob(blob);
-        setRecordingState('complete');
         
-        // Immediately set up preview
-        if (previewVideoRef.current) {
-          const url = URL.createObjectURL(blob);
-          console.log('Preview URL created:', url);
-          previewVideoRef.current.src = url;
-          previewVideoRef.current.load(); // Force load
-        }
+        // Wait a bit before transitioning to complete
+        setTimeout(() => {
+          setRecordingState('complete');
+          
+          // Set up preview after state change
+          setTimeout(() => {
+            if (previewVideoRef.current && blob.size > 0) {
+              const url = URL.createObjectURL(blob);
+              console.log('✅ Preview URL created:', url);
+              previewVideoRef.current.src = url;
+              previewVideoRef.current.load();
+              
+              // Try to play
+              previewVideoRef.current.play().then(() => {
+                console.log('✅ Video playback started');
+              }).catch((err) => {
+                console.error('❌ Video playback failed:', err);
+                setCameraError('Video created but playback failed. Try downloading instead.');
+              });
+            }
+          }, 100);
+        }, 100);
       };
 
       mediaRecorder.onerror = (e) => {
