@@ -583,25 +583,28 @@ export function VideoRecorder({
         <X className="w-6 h-6 text-white" />
       </button>
 
-      {/* Debug info - temporary */}
-      <div className="absolute top-4 left-4 z-50 bg-black/80 text-white p-3 rounded text-xs max-w-xs">
-        <p>Stream: {streamRef.current ? '✅' : '❌'}</p>
-        <p>Video ready: {videoRef.current?.readyState || 'N/A'}</p>
-        <p>State: {recordingState}</p>
-      </div>
-
-      {/* Camera Switch Button - Only show in setup mode */}
+      {/* Camera Switch Button - PROMINENTLY VISIBLE IN TOP LEFT */}
       {recordingState === 'setup' && (
         <button
           onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
-          className="absolute top-24 left-4 z-50 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors"
+          className="absolute top-4 left-4 z-50 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-5 py-3 rounded-full flex items-center gap-2 transition-all shadow-2xl hover:scale-105"
+          style={{ boxShadow: `0 0 20px ${chakraColor}60` }}
         >
           <Video className="w-5 h-5" />
-          <span className="text-sm font-semibold">
-            {facingMode === 'user' ? '📷 Front' : '📹 Back'}
+          <span className="text-sm font-bold">
+            {facingMode === 'user' ? '🤳 Front' : '📸 Back'}
           </span>
         </button>
       )}
+
+      {/* Debug info - temporary - MOVED DOWN */}
+      <div className="absolute top-20 left-4 z-50 bg-black/80 text-white p-3 rounded text-xs max-w-xs">
+        <p>Stream: {streamRef.current ? '✅' : '❌'}</p>
+        <p>Video ready: {videoRef.current?.readyState || 'N/A'}</p>
+        <p>State: {recordingState}</p>
+        <p>Camera: {facingMode}</p>
+        <p>Mandala container: {document.querySelector('[data-video-recorder-mandala="true"]') ? '✅' : '❌'}</p>
+      </div>
 
       {/* Error message */}
       {cameraError && (
