@@ -44,6 +44,7 @@ export function VideoRecorder({
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user'); // Front or back camera
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -81,6 +82,16 @@ export function VideoRecorder({
       cleanup();
     };
   }, []);
+
+  // Reinitialize camera when facingMode changes
+  useEffect(() => {
+    if (streamRef.current) {
+      // Stop current stream
+      streamRef.current.getTracks().forEach(track => track.stop());
+      // Reinitialize with new facing mode
+      initializeCamera();
+    }
+  }, [facingMode]);
 
   // Live preview of mandala in setup mode
   useEffect(() => {
@@ -126,7 +137,7 @@ export function VideoRecorder({
       // Request camera access (front camera for selfie-style recording)
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          facingMode: 'user',
+          facingMode: facingMode,
           width: { ideal: 1280 },
           height: { ideal: 720 }
         },
@@ -191,9 +202,10 @@ export function VideoRecorder({
       ctx.drawImage(videoRef.current, 0, 0, width, halfHeight);
     }
 
-    // Draw chakra controller on bottom half - CAPTURE ACTUAL CANVAS
-    const mandalaCanvas = document.querySelector('[data-mandala-controller]') as HTMLCanvasElement;
-    console.log('🔍 Looking for mandala canvas...', mandalaCanvas);
+    // Draw chakra controller on bottom half - CAPTURE ONLY VIDEO RECORDER CANVAS
+    const videoRecorderContainer = document.querySelector('[data-video-recorder-mandala="true"]');
+    const mandalaCanvas = videoRecorderContainer?.querySelector('[data-mandala-controller]') as HTMLCanvasElement;
+    console.log('🔍 Looking for video recorder mandala canvas...', mandalaCanvas);
     
     if (mandalaCanvas && mandalaCanvas instanceof HTMLCanvasElement) {
       console.log('✅ Found mandala canvas:', mandalaCanvas.width, 'x', mandalaCanvas.height);
@@ -578,6 +590,19 @@ export function VideoRecorder({
         <p>State: {recordingState}</p>
       </div>
 
+      {/* Camera Switch Button - Only show in setup mode */}
+      {recordingState === 'setup' && (
+        <button
+          onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
+          className="absolute top-24 left-4 z-50 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors"
+        >
+          <Video className="w-5 h-5" />
+          <span className="text-sm font-semibold">
+            {facingMode === 'user' ? '📷 Front' : '📹 Back'}
+          </span>
+        </button>
+      )}
+
       {/* Error message */}
       {cameraError && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-red-500/90 text-white px-6 py-3 rounded-lg max-w-md text-center">
@@ -728,16 +753,18 @@ export function VideoRecorder({
 
           {/* Chakra controller - bottom half - ISOLATED */}
           <div className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden p-4 relative">
-            {/* Single mandala controller */}
+            {/* Single mandala controller - UNIQUE ID FOR VIDEO RECORDING */}
             <div className="w-full h-full max-w-md max-h-full flex items-center justify-center">
-              <MandalaController
-                tracks={safeTracks}
-                onVolumeChange={onVolumeChange}
-                chakraColor={chakraColor}
-                controllerPosition={controllerPosition}
-                onControllerMove={onControllerMove}
-                isAutoMixing={isAutoMixing}
-              />
+              <div data-video-recorder-mandala="true">
+                <MandalaController
+                  tracks={safeTracks}
+                  onVolumeChange={onVolumeChange}
+                  chakraColor={chakraColor}
+                  controllerPosition={controllerPosition}
+                  onControllerMove={onControllerMove}
+                  isAutoMixing={isAutoMixing}
+                />
+              </div>
             </div>
           </div>
 
