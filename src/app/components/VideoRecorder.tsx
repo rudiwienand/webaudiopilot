@@ -88,6 +88,10 @@ export function VideoRecorder({
     if (streamRef.current) {
       // Stop current stream
       streamRef.current.getTracks().forEach(track => track.stop());
+      // Clear the video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
       // Reinitialize with new facing mode
       initializeCamera();
     }
