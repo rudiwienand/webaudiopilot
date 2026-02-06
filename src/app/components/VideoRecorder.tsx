@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { Video, X, Download, Share2, Trash2, Circle } from 'lucide-react';
+import { Video, X, Download, Share2, Trash2, Circle, Square } from 'lucide-react';
 
 interface VideoRecorderProps {
   chakraColor: string;
   audioContext: AudioContext | null;
   masterGainNode: GainNode | null;
   onClose: () => void;
+  onStartPlayback?: () => void;
 }
 
-export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClose }: VideoRecorderProps) {
+export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClose, onStartPlayback }: VideoRecorderProps) {
   const RECORDING_DURATION = 50; // in seconds
   const [recordingState, setRecordingState] = useState<'setup' | 'recording' | 'complete'>('setup');
   const [countdown, setCountdown] = useState(RECORDING_DURATION);
@@ -144,7 +145,10 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
 
     // Draw chakra controller on bottom half - CAPTURE ACTUAL CANVAS
     const mandalaCanvas = document.querySelector('[data-mandala-controller]') as HTMLCanvasElement;
+    console.log('🔍 Looking for mandala canvas...', mandalaCanvas);
+    
     if (mandalaCanvas && mandalaCanvas instanceof HTMLCanvasElement) {
+      console.log('✅ Found mandala canvas:', mandalaCanvas.width, 'x', mandalaCanvas.height);
       // Draw the actual mandala canvas scaled to fit bottom half
       try {
         ctx.save();
@@ -251,6 +255,12 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
     if (!canvasRef.current || !audioContext) {
       setCameraError('Recording setup failed. Please try again.');
       return;
+    }
+
+    // Auto-start audio playback
+    if (onStartPlayback) {
+      console.log('Auto-starting audio playback...');
+      onStartPlayback();
     }
 
     try {
@@ -583,6 +593,16 @@ export function VideoRecorder({ chakraColor, audioContext, masterGainNode, onClo
               </p>
               <p className="text-white/70 text-center text-sm mt-2">Recording...</p>
             </div>
+          )}
+
+          {/* Stop button - bottom center */}
+          {recordingState === 'recording' && (
+            <button
+              onClick={stopRecording}
+              className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 w-16 h-16 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-2xl transition-all hover:scale-110"
+            >
+              <Square className="w-8 h-8 text-red-600 fill-red-600" />
+            </button>
           )}
 
           {/* Chakra controller - bottom half */}
