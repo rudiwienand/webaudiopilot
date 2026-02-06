@@ -50,6 +50,17 @@ export function VideoRecorder({
   const animationFrameRef = useRef<number | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Debug: Log props on mount
+  useEffect(() => {
+    console.log('VideoRecorder mounted with props:', {
+      tracksLength: tracks?.length,
+      tracks: tracks,
+      audioContext: audioContext,
+      masterGainNode: masterGainNode,
+      controllerPosition: controllerPosition
+    });
+  }, []);
+
   // Initialize camera on mount
   useEffect(() => {
     initializeCamera();
