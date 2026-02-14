@@ -209,9 +209,9 @@ export function VideoRecorder({
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Watermark (bottom right corner) - High quality with logo and text
-    const wmPadding = 20;
-    const logoHeight = 80; // Increased from 50 for better visibility
+    // Watermark (bottom right corner) - High quality with logo and curved text
+    const wmPadding = 25;
+    const logoSize = 120; // Larger logo for better quality
     
     ctx.save();
     
@@ -220,82 +220,84 @@ export function VideoRecorder({
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       
-      // Calculate logo dimensions maintaining aspect ratio
-      const logoAspect = logoImageRef.current.width / logoImageRef.current.height;
-      const logoWidth = logoHeight * logoAspect;
-      
-      // Text settings
       const text = 'SoundMeditationPilot';
-      ctx.font = 'bold 22px Arial';
-      const textMetrics = ctx.measureText(text);
-      const textWidth = textMetrics.width;
-      const textHeight = 26;
       
-      // Calculate total dimensions
-      const totalWidth = Math.max(logoWidth, textWidth);
-      const totalHeight = logoHeight + textHeight + 10; // 10px gap between logo and text
+      // Calculate container size (logo + space for curved text)
+      const textRadius = logoSize / 2 + 45; // Text curves 45px outside logo
+      const containerSize = textRadius * 2 + 30; // Extra padding
       
       // Position: bottom right with padding
-      const containerX = width - totalWidth - wmPadding;
-      const containerY = height - totalHeight - wmPadding;
+      const centerX = width - containerSize / 2 - wmPadding;
+      const centerY = height - containerSize / 2 - wmPadding;
       
-      // Semi-transparent background for readability
-      const bgPadding = 12;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.roundRect(
-        containerX - bgPadding,
-        containerY - bgPadding,
-        totalWidth + bgPadding * 2,
-        totalHeight + bgPadding * 2,
-        10
-      );
+      // Semi-transparent background circle
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, containerSize / 2, 0, Math.PI * 2);
       ctx.fill();
       
-      // Draw the logo (centered horizontally if narrower than text)
-      const logoX = containerX + (totalWidth - logoWidth) / 2;
-      const logoY = containerY;
+      // Draw the logo in center (larger and sharper)
+      const logoX = centerX - logoSize / 2;
+      const logoY = centerY - logoSize / 2;
       
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 3;
+      ctx.shadowOffsetY = 3;
       
+      // Draw logo at higher quality
       ctx.drawImage(
         logoImageRef.current,
         logoX,
         logoY,
-        logoWidth,
-        logoHeight
+        logoSize,
+        logoSize
       );
       
-      // Draw the text below the logo
+      // Draw curved text around the logo
       ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 6;
+      ctx.shadowBlur = 8;
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
       ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px Arial';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(text, containerX + totalWidth / 2, containerY + logoHeight + 10);
+      ctx.textBaseline = 'middle';
+      
+      // Calculate angle for each character
+      const angleStep = (Math.PI * 1.5) / text.length; // Spread across 270 degrees
+      const startAngle = -Math.PI * 0.75; // Start from top
+      
+      for (let i = 0; i < text.length; i++) {
+        const angle = startAngle + i * angleStep;
+        const x = centerX + Math.cos(angle) * textRadius;
+        const y = centerY + Math.sin(angle) * textRadius;
+        
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle + Math.PI / 2); // Rotate to follow curve
+        ctx.fillText(text[i], 0, 0);
+        ctx.restore();
+      }
       
     } else {
       // Fallback text-only watermark if logo doesn't load
       const text = 'SoundMeditationPilot';
-      ctx.font = 'bold 24px Arial';
+      ctx.font = 'bold 26px Arial';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'bottom';
       
       // Background
       const textMetrics = ctx.measureText(text);
-      const bgPadding = 12;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      const bgPadding = 14;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
       ctx.roundRect(
         width - textMetrics.width - bgPadding * 2 - wmPadding,
-        height - 36 - bgPadding * 2 - wmPadding,
+        height - 40 - bgPadding * 2 - wmPadding,
         textMetrics.width + bgPadding * 2,
-        36 + bgPadding * 2,
-        10
+        40 + bgPadding * 2,
+        12
       );
       ctx.fill();
       
