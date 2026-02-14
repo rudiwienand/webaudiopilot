@@ -54,6 +54,7 @@ export function VideoRecorder({
   const chunksRef = useRef<Blob[]>([]);
   const animationFrameRef = useRef<number | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const logoImageRef = useRef<HTMLImageElement | null>(null);
 
   const safeTracks = tracks && tracks.length > 0 ? tracks : Array.from({ length: 9 }, (_, i) => ({
     id: i + 1,
@@ -65,6 +66,7 @@ export function VideoRecorder({
   // Initialize camera on mount
   useEffect(() => {
     initializeCamera();
+    loadLogo();
     return cleanup;
   }, []);
 
@@ -131,6 +133,18 @@ export function VideoRecorder({
         setCameraError('Cannot access camera: ' + err.message);
       }
     }
+  };
+
+  const loadLogo = () => {
+    const logoImage = new Image();
+    logoImage.src = '/icon.svg';
+    logoImage.onload = () => {
+      logoImageRef.current = logoImage;
+      console.log('✅ Logo loaded successfully');
+    };
+    logoImage.onerror = () => {
+      console.error('Failed to load logo');
+    };
   };
 
   const drawCompositeFrame = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
@@ -215,66 +229,24 @@ export function VideoRecorder({
     ctx.lineWidth = 2;
     ctx.strokeRect(width - wmWidth - wmPadding, height - wmHeight - wmPadding, wmWidth, wmHeight);
 
-    // Draw tuning fork circle symbol on the left of watermark
-    const symbolX = width - wmWidth - wmPadding + 40;
-    const symbolY = height - wmHeight / 2 - wmPadding;
-    const symbolRadius = 25;
+    // Draw app logo icon on the left of watermark
+    const iconSize = 55;
+    const iconX = width - wmWidth - wmPadding + iconSize / 2 + 5;
+    const iconY = height - wmHeight / 2 - wmPadding;
     
-    // Outer circle (glowing effect)
     ctx.save();
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.6)';
-    ctx.shadowBlur = 15;
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(symbolX, symbolY, symbolRadius, 0, Math.PI * 2);
-    ctx.stroke();
-    
-    // Inner circle
-    ctx.shadowBlur = 8;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(symbolX, symbolY, symbolRadius - 8, 0, Math.PI * 2);
-    ctx.stroke();
-    
-    // Draw tuning fork in center
-    ctx.shadowBlur = 6;
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    
-    // Fork prongs (two vertical lines)
-    const forkTop = symbolY - 12;
-    const forkBottom = symbolY + 2;
-    const forkSpacing = 6;
-    
-    ctx.beginPath();
-    ctx.moveTo(symbolX - forkSpacing, forkTop);
-    ctx.lineTo(symbolX - forkSpacing, forkBottom);
-    ctx.stroke();
-    
-    ctx.beginPath();
-    ctx.moveTo(symbolX + forkSpacing, forkTop);
-    ctx.lineTo(symbolX + forkSpacing, forkBottom);
-    ctx.stroke();
-    
-    // Fork base (connecting line at top)
-    ctx.beginPath();
-    ctx.moveTo(symbolX - forkSpacing, forkTop);
-    ctx.lineTo(symbolX + forkSpacing, forkTop);
-    ctx.stroke();
-    
-    // Handle (vertical line down)
-    ctx.beginPath();
-    ctx.moveTo(symbolX, forkBottom);
-    ctx.lineTo(symbolX, symbolY + 10);
-    ctx.stroke();
-    
-    // Handle end circle
-    ctx.beginPath();
-    ctx.arc(symbolX, symbolY + 12, 2, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    
+    if (logoImageRef.current) {
+      // Draw the app icon with shadow/glow
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+      ctx.shadowBlur = 12;
+      ctx.drawImage(
+        logoImageRef.current,
+        iconX - iconSize / 2,
+        iconY - iconSize / 2,
+        iconSize,
+        iconSize
+      );
+    }
     ctx.restore();
 
     // Text: "Sound Meditation Pilot"
@@ -286,7 +258,7 @@ export function VideoRecorder({
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'left';
-    ctx.fillText('Sound Meditation Pilot', symbolX + 45, symbolY + 8);
+    ctx.fillText('Sound Meditation Pilot', iconX + iconSize / 2 + 15, iconY + 8);
     ctx.restore();
 
     // Recording timer (on the dividing line, centered)
