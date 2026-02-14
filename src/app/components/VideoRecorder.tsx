@@ -305,9 +305,9 @@ export function VideoRecorder({
 
       // Test multiple codecs
       const codecs = [
-        'video/webm;codecs=vp8',
-        'video/webm;codecs=vp9',
-        'video/webm',
+        'video/webm;codecs=vp8,opus',  // VP8 video + Opus audio
+        'video/webm;codecs=vp9,opus',  // VP9 video + Opus audio
+        'video/webm',                   // Let browser choose
         '' // default
       ];
       
