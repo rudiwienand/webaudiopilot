@@ -45,6 +45,7 @@ export function VideoRecorder({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [cameraReady, setCameraReady] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -568,18 +569,42 @@ export function VideoRecorder({
   };
 
   const handleShare = async () => {
+    setShowShareMenu(true);
+  };
+
+  const shareToSocialMedia = async (platform: 'instagram' | 'facebook' | 'whatsapp' | 'telegram') => {
     if (!videoBlob) return;
-    try {
-      // Use .mp4 extension for better social media compatibility
-      const file = new File([videoBlob], `chakra-meditation-${Date.now()}.mp4`, { type: 'video/mp4' });
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file] });
-      } else {
-        handleSave();
-      }
-    } catch (err) {
-      console.error('Share error:', err);
+    
+    // First download the video
+    handleSave();
+    
+    // Then open the respective social media platform
+    const shareText = 'Check out my meditation session from Sound Meditation Pilot!';
+    const appUrl = window.location.href;
+    
+    switch (platform) {
+      case 'instagram':
+        // Instagram doesn't support direct web sharing, user needs to upload manually
+        alert('Video downloaded! Please open Instagram app and upload the video from your device.');
+        break;
+      
+      case 'facebook':
+        // Facebook sharing (opens Facebook to make a post)
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank');
+        break;
+      
+      case 'whatsapp':
+        // WhatsApp sharing
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + appUrl)}`, '_blank');
+        break;
+      
+      case 'telegram':
+        // Telegram sharing
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(appUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+        break;
     }
+    
+    setShowShareMenu(false);
   };
 
   const handleDelete = () => {
@@ -630,7 +655,7 @@ export function VideoRecorder({
               <Download className="w-5 h-5" />
               <span>Save</span>
             </button>
-            <button onClick={handleShare} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl flex items-center justify-center gap-2">
+            <button onClick={() => setShowShareMenu(!showShareMenu)} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl flex items-center justify-center gap-2">
               <Share2 className="w-5 h-5" />
               <span>Share</span>
             </button>
@@ -639,6 +664,46 @@ export function VideoRecorder({
               <span>Delete</span>
             </button>
           </div>
+          {showShareMenu && (
+            <div className="absolute bottom-32 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-t-2 border-slate-700 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white text-lg font-semibold">Share to Social Media</h3>
+                <button onClick={() => setShowShareMenu(false)} className="text-white/70 hover:text-white">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={() => shareToSocialMedia('instagram')} 
+                  className="bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                >
+                  <span className="text-2xl">📸</span>
+                  <span className="font-semibold">Instagram</span>
+                </button>
+                <button 
+                  onClick={() => shareToSocialMedia('facebook')} 
+                  className="bg-blue-600 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                >
+                  <span className="text-2xl">👤</span>
+                  <span className="font-semibold">Facebook</span>
+                </button>
+                <button 
+                  onClick={() => shareToSocialMedia('whatsapp')} 
+                  className="bg-green-600 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                >
+                  <span className="text-2xl">💬</span>
+                  <span className="font-semibold">WhatsApp</span>
+                </button>
+                <button 
+                  onClick={() => shareToSocialMedia('telegram')} 
+                  className="bg-sky-600 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                >
+                  <span className="text-2xl">✈️</span>
+                  <span className="font-semibold">Telegram</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
