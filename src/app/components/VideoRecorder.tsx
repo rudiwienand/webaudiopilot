@@ -67,7 +67,6 @@ export function VideoRecorder({
   // Initialize camera on mount
   useEffect(() => {
     initializeCamera();
-    loadLogo();
     return cleanup;
   }, []);
 
@@ -288,28 +287,58 @@ export function VideoRecorder({
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Watermark (bottom right corner) - Use pre-rendered high-quality watermark
-    if (watermarkCanvasRef.current) {
-      const wmSize = 120; // Final display size
-      const wmPadding = 20;
-      const wmX = width - wmSize - wmPadding;
-      const wmY = height - wmSize - wmPadding;
-      
-      ctx.save();
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      
-      // Draw the pre-rendered watermark scaled down for perfect quality
-      ctx.drawImage(
-        watermarkCanvasRef.current,
-        wmX,
-        wmY,
-        wmSize,
-        wmSize
-      );
-      
-      ctx.restore();
-    }
+    // Watermark (bottom right corner) - Simple text watermark
+    ctx.save();
+    
+    const text = 'Sound Meditation Pilot';
+    const wmPadding = 25;
+    
+    // Use system font similar to app
+    ctx.font = '18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    
+    // Measure text
+    const textMetrics = ctx.measureText(text);
+    const textWidth = textMetrics.width;
+    const textHeight = 24;
+    const bgPadding = 12;
+    
+    // Position at bottom right
+    const bgX = width - textWidth - bgPadding * 2 - wmPadding;
+    const bgY = height - textHeight - bgPadding * 2 - wmPadding;
+    
+    // Background with subtle gradient
+    const gradient = ctx.createLinearGradient(bgX, bgY, bgX, bgY + textHeight + bgPadding * 2);
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.75)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.85)');
+    ctx.fillStyle = gradient;
+    ctx.roundRect(
+      bgX,
+      bgY,
+      textWidth + bgPadding * 2,
+      textHeight + bgPadding * 2,
+      8
+    );
+    ctx.fill();
+    
+    // Text with glow matching chakra color
+    ctx.shadowColor = chakraColor;
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(text, width - bgPadding - wmPadding, height - bgPadding - wmPadding - 4);
+    
+    // Reset shadow and add subtle inner glow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(text, width - bgPadding - wmPadding, height - bgPadding - wmPadding - 4);
+    
+    ctx.restore();
 
     // Recording timer (on the dividing line, centered)
     if (recordingState === 'recording') {
