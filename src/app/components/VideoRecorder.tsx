@@ -137,13 +137,13 @@ export function VideoRecorder({
 
   const loadLogo = () => {
     const logoImage = new Image();
-    logoImage.src = '/icon.svg';
+    logoImage.src = '/tuningforklogo.png';
     logoImage.onload = () => {
       logoImageRef.current = logoImage;
       console.log('✅ Logo loaded successfully');
     };
     logoImage.onerror = () => {
-      console.error('Failed to load logo');
+      console.error('Failed to load logo from /tuningforklogo.png');
     };
   };
 
@@ -209,56 +209,76 @@ export function VideoRecorder({
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Watermark (bottom right corner)
-    const wmHeight = 70;
-    const wmPadding = 20;
-    const wmWidth = 320;
-    
-    const gradient = ctx.createLinearGradient(
-      width - wmWidth - wmPadding, height - wmHeight - wmPadding,
-      width - wmPadding, height - wmPadding
-    );
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)');
-    gradient.addColorStop(0.5, 'rgba(147, 51, 234, 0.85)');
-    gradient.addColorStop(1, 'rgba(236, 72, 153, 0.85)');
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(width - wmWidth - wmPadding, height - wmHeight - wmPadding, wmWidth, wmHeight);
-    
-    ctx.strokeStyle = chakraColor;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(width - wmWidth - wmPadding, height - wmHeight - wmPadding, wmWidth, wmHeight);
-
-    // Draw app logo icon on the left of watermark
-    const iconSize = 55;
-    const iconX = width - wmWidth - wmPadding + iconSize / 2 + 5;
-    const iconY = height - wmHeight / 2 - wmPadding;
+    // Watermark (bottom right corner) - Simple and elegant design
+    const wmPadding = 15;
+    const logoHeight = 50; // Height for the logo
     
     ctx.save();
+    
     if (logoImageRef.current) {
-      // Draw the app icon with shadow/glow
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-      ctx.shadowBlur = 12;
+      // Calculate logo dimensions maintaining aspect ratio
+      const logoAspect = logoImageRef.current.width / logoImageRef.current.height;
+      const logoWidth = logoHeight * logoAspect;
+      
+      // Position: bottom right with padding
+      const logoX = width - logoWidth - wmPadding;
+      const logoY = height - logoHeight - wmPadding;
+      
+      // Semi-transparent background for readability
+      const bgPadding = 10;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.roundRect(
+        logoX - bgPadding,
+        logoY - bgPadding,
+        logoWidth + bgPadding * 2,
+        logoHeight + bgPadding * 2,
+        8
+      );
+      ctx.fill();
+      
+      // Draw the logo
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      
       ctx.drawImage(
         logoImageRef.current,
-        iconX - iconSize / 2,
-        iconY - iconSize / 2,
-        iconSize,
-        iconSize
+        logoX,
+        logoY,
+        logoWidth,
+        logoHeight
       );
+    } else {
+      // Fallback text-only watermark if logo doesn't load
+      const text = 'Sound Meditation Pilot';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      
+      // Background
+      const textMetrics = ctx.measureText(text);
+      const bgPadding = 10;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.roundRect(
+        width - textMetrics.width - bgPadding * 2 - wmPadding,
+        height - 30 - bgPadding * 2 - wmPadding,
+        textMetrics.width + bgPadding * 2,
+        30 + bgPadding * 2,
+        8
+      );
+      ctx.fill();
+      
+      // Text with shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(text, width - bgPadding - wmPadding, height - bgPadding - wmPadding);
     }
-    ctx.restore();
-
-    // Text: "Sound Meditation Pilot"
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 24px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText('Sound Meditation Pilot', iconX + iconSize / 2 + 15, iconY + 8);
+    
     ctx.restore();
 
     // Recording timer (on the dividing line, centered)
