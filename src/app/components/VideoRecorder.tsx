@@ -137,10 +137,11 @@ export function VideoRecorder({
 
   const loadLogo = () => {
     const logoImage = new Image();
+    logoImage.crossOrigin = 'anonymous'; // Enable cross-origin for better rendering
     logoImage.src = '/tuningforklogo.png';
     logoImage.onload = () => {
       logoImageRef.current = logoImage;
-      console.log('✅ Logo loaded successfully');
+      console.log('✅ Logo loaded successfully', logoImage.width, 'x', logoImage.height);
     };
     logoImage.onerror = () => {
       console.error('Failed to load logo from /tuningforklogo.png');
@@ -209,9 +210,9 @@ export function VideoRecorder({
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Watermark (bottom right corner) - High quality with logo and curved text
-    const wmPadding = 25;
-    const logoSize = 120; // Larger logo for better quality
+    // Watermark (bottom right corner) - High quality with logo and curved text all around
+    const wmPadding = 20;
+    const logoSize = 84; // 70% of 120 = 84px
     
     ctx.save();
     
@@ -223,8 +224,8 @@ export function VideoRecorder({
       const text = 'SoundMeditationPilot';
       
       // Calculate container size (logo + space for curved text)
-      const textRadius = logoSize / 2 + 45; // Text curves 45px outside logo
-      const containerSize = textRadius * 2 + 30; // Extra padding
+      const textRadius = logoSize / 2 + 32; // Text curves 32px outside logo (70% of 45)
+      const containerSize = (textRadius * 2 + 25) * 0.7; // Scale everything by 70%
       
       // Position: bottom right with padding
       const centerX = width - containerSize / 2 - wmPadding;
@@ -236,37 +237,35 @@ export function VideoRecorder({
       ctx.arc(centerX, centerY, containerSize / 2, 0, Math.PI * 2);
       ctx.fill();
       
-      // Draw the logo in center (larger and sharper)
+      // Draw the logo in center at actual size (not from scaled source)
       const logoX = centerX - logoSize / 2;
       const logoY = centerY - logoSize / 2;
       
       ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = 3;
-      ctx.shadowOffsetY = 3;
-      
-      // Draw logo at higher quality
-      ctx.drawImage(
-        logoImageRef.current,
-        logoX,
-        logoY,
-        logoSize,
-        logoSize
-      );
-      
-      // Draw curved text around the logo
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
       ctx.shadowBlur = 8;
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
+      
+      // Draw logo - use drawImage from full source at reduced size for better quality
+      ctx.drawImage(
+        logoImageRef.current,
+        0, 0, logoImageRef.current.width, logoImageRef.current.height, // Source: full image
+        logoX, logoY, logoSize, logoSize // Destination: scaled down
+      );
+      
+      // Draw curved text all around the logo (360 degrees)
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 1.5;
+      ctx.shadowOffsetY = 1.5;
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 18px Arial';
+      ctx.font = 'bold 13px Arial'; // 70% of 18px
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
-      // Calculate angle for each character
-      const angleStep = (Math.PI * 1.5) / text.length; // Spread across 270 degrees
-      const startAngle = -Math.PI * 0.75; // Start from top
+      // Calculate angle for each character to go full circle (360 degrees)
+      const angleStep = (Math.PI * 2) / text.length; // Full 360 degrees
+      const startAngle = -Math.PI / 2; // Start from top (12 o'clock)
       
       for (let i = 0; i < text.length; i++) {
         const angle = startAngle + i * angleStep;
@@ -283,27 +282,27 @@ export function VideoRecorder({
     } else {
       // Fallback text-only watermark if logo doesn't load
       const text = 'SoundMeditationPilot';
-      ctx.font = 'bold 26px Arial';
+      ctx.font = 'bold 20px Arial';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'bottom';
       
       // Background
       const textMetrics = ctx.measureText(text);
-      const bgPadding = 14;
+      const bgPadding = 12;
       ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
       ctx.roundRect(
         width - textMetrics.width - bgPadding * 2 - wmPadding,
-        height - 40 - bgPadding * 2 - wmPadding,
+        height - 32 - bgPadding * 2 - wmPadding,
         textMetrics.width + bgPadding * 2,
-        40 + bgPadding * 2,
-        12
+        32 + bgPadding * 2,
+        10
       );
       ctx.fill();
       
       // Text with shadow
       ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 6;
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
       ctx.fillStyle = '#ffffff';
