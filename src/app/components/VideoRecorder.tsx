@@ -556,13 +556,11 @@ export function VideoRecorder({
   const handleSave = () => {
     if (!videoBlob) return;
     
-    // Determine file extension based on blob type
-    const fileExtension = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
-    
+    // Always use .mp4 extension for better compatibility with social media
     const url = URL.createObjectURL(videoBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `chakra-meditation-${Date.now()}.${fileExtension}`;
+    a.download = `chakra-meditation-${Date.now()}.mp4`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -572,11 +570,8 @@ export function VideoRecorder({
   const handleShare = async () => {
     if (!videoBlob) return;
     try {
-      // Determine file extension based on blob type
-      const fileExtension = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
-      const mimeType = videoBlob.type || 'video/webm';
-      
-      const file = new File([videoBlob], `chakra-meditation-${Date.now()}.${fileExtension}`, { type: mimeType });
+      // Use .mp4 extension for better social media compatibility
+      const file = new File([videoBlob], `chakra-meditation-${Date.now()}.mp4`, { type: 'video/mp4' });
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file] });
       } else {
