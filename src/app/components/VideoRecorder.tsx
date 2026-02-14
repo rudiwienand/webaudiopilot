@@ -249,81 +249,150 @@ export function VideoRecorder({
   };
 
   const startRecording = async () => {
+    console.log('=== START RECORDING ===');
+    
     if (!canvasRef.current || !cameraReady) {
+      console.error('Not ready:', { canvas: !!canvasRef.current, cameraReady });
       setCameraError('Camera not ready');
       return;
     }
 
     // Auto-start audio
     if (onStartPlayback && !isChakraPlaying) {
+      console.log('Starting audio playback...');
       onStartPlayback();
       await new Promise(resolve => setTimeout(resolve, 300));
     }
 
     if (audioContext && audioContext.state === 'suspended') {
+      console.log('Resuming audio context...');
       await audioContext.resume();
     }
 
     try {
       const canvas = canvasRef.current;
-      canvas.width = 1080;
-      canvas.height = 1920;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas failed');
+      
+      // Try smaller resolution first for better compatibility
+      canvas.width = 720;
+      canvas.height = 1280;
+      console.log('Canvas size:', canvas.width, 'x', canvas.height);
+      
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (!ctx) {
+        console.error('Failed to get canvas context');
+        throw new Error('Canvas context failed');
+      }
 
-      const canvasStream = canvas.captureStream(30);
+      console.log('Capturing canvas stream...');
+      const canvasStream = canvas.captureStream(25); // Lower frame rate for better performance
+      console.log('Canvas stream tracks:', canvasStream.getTracks().length);
       
       let finalStream = canvasStream;
       if (audioContext && masterGainNode) {
         try {
+          console.log('Adding audio to stream...');
           const destination = audioContext.createMediaStreamDestination();
           masterGainNode.connect(destination);
           finalStream = new MediaStream([
             ...canvasStream.getVideoTracks(),
             ...destination.stream.getAudioTracks()
           ]);
+          console.log('Final stream tracks:', finalStream.getTracks().length);
         } catch (err) {
-          console.warn('No audio capture:', err);
+          console.warn('Audio capture failed:', err);
         }
       }
 
-      // Try simple codec
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') 
-        ? 'video/webm;codecs=vp8'
-        : 'video/webm';
+      // Test multiple codecs
+      const codecs = [
+        'video/webm;codecs=vp8',
+        'video/webm;codecs=vp9',
+        'video/webm',
+        '' // default
+      ];
       
-      const mediaRecorder = new MediaRecorder(finalStream, { 
-        mimeType,
-        videoBitsPerSecond: 2500000 
-      });
+      let selectedCodec = '';
+      for (const codec of codecs) {
+        const supported = codec === '' || MediaRecorder.isTypeSupported(codec);
+        console.log(`Codec "${codec || 'default'}": ${supported ? '✅' : '❌'}`);
+        if (supported && !selectedCodec) {
+          selectedCodec = codec;
+        }
+      }
+      
+      if (!selectedCodec && selectedCodec !== '') {
+        throw new Error('No supported video codec found');
+      }
+      
+      console.log('Using codec:', selectedCodec || 'default');
+      
+      const options: any = {
+        videoBitsPerSecond: 1500000 // Lower bitrate for stability
+      };
+      if (selectedCodec) options.mimeType = selectedCodec;
+      
+      console.log('Creating MediaRecorder with options:', options);
+      const mediaRecorder = new MediaRecorder(finalStream, options);
 
       chunksRef.current = [];
+      let chunkCount = 0;
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+          chunkCount++;
+          console.log(`Chunk ${chunkCount}: ${e.data.size} bytes`);
+        }
+      };
+
+      mediaRecorder.onerror = (e) => {
+        console.error('MediaRecorder error:', e);
+        setCameraError('Recording error occurred');
       };
 
       mediaRecorder.onstop = () => {
+        console.log('=== RECORDING STOPPED ===');
+        console.log('Total chunks:', chunksRef.current.length);
+        
         if (chunksRef.current.length === 0) {
-          setCameraError('Recording failed');
+          console.error('No chunks collected!');
+          setCameraError('Recording failed - no data captured');
           setRecordingState('setup');
           return;
         }
         
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        const totalSize = chunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0);
+        console.log('Total size:', totalSize, 'bytes');
+        
+        const blob = new Blob(chunksRef.current, { type: selectedCodec || 'video/webm' });
+        console.log('Final blob:', blob.size, 'bytes');
+        
+        if (blob.size === 0) {
+          console.error('Empty blob!');
+          setCameraError('Recording failed - empty video');
+          setRecordingState('setup');
+          return;
+        }
+        
         setVideoBlob(blob);
         setRecordingState('complete');
         
         // Setup preview
         setTimeout(() => {
           if (previewVideoRef.current) {
-            previewVideoRef.current.src = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
+            console.log('Preview URL:', url);
+            previewVideoRef.current.src = url;
           }
         }, 100);
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100);
+      
+      console.log('Starting MediaRecorder...');
+      mediaRecorder.start(200); // Larger chunks for stability
+      console.log('MediaRecorder state:', mediaRecorder.state);
+      
       setRecordingState('recording');
       setCountdown(RECORDING_DURATION);
 
@@ -340,14 +409,25 @@ export function VideoRecorder({
 
       // Animation loop
       const animate = () => {
-        drawCompositeFrame(ctx, canvas);
+        try {
+          drawCompositeFrame(ctx, canvas);
+        } catch (err) {
+          console.error('Draw error:', err);
+        }
         animationFrameRef.current = requestAnimationFrame(animate);
       };
       animate();
+      
+      console.log('Recording started successfully!');
 
-    } catch (err) {
-      console.error('Recording error:', err);
-      setCameraError('Failed to start recording');
+    } catch (err: any) {
+      console.error('=== RECORDING FAILED ===');
+      console.error('Error:', err);
+      console.error('Error name:', err.name);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
+      setCameraError(`Failed to start recording: ${err.message}`);
+      setRecordingState('setup');
     }
   };
 
