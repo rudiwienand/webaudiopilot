@@ -287,7 +287,7 @@ export function VideoRecorder({
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Watermark (top of dividing line, right side) - Clean text watermark that doesn't overlap mandala
+    // Watermark (bottom right corner) - Clean text watermark
     ctx.save();
     
     const text = 'Sound Meditation Pilot';
@@ -296,7 +296,7 @@ export function VideoRecorder({
     // Use system font similar to app
     ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
+    ctx.textBaseline = 'bottom';
     
     // Measure text
     const textMetrics = ctx.measureText(text);
@@ -304,9 +304,9 @@ export function VideoRecorder({
     const textHeight = 20;
     const bgPadding = 10;
     
-    // Position at dividing line, right side (above the mandala area)
+    // Position at bottom right corner
     const bgX = width - textWidth - bgPadding * 2 - wmPadding;
-    const bgY = halfHeight - (textHeight + bgPadding * 2) / 2;
+    const bgY = height - textHeight - bgPadding * 2 - wmPadding;
     
     // Background with chakra color accent
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
@@ -337,7 +337,7 @@ export function VideoRecorder({
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(text, width - bgPadding - wmPadding, halfHeight);
+    ctx.fillText(text, width - bgPadding - wmPadding, height - bgPadding - wmPadding);
     
     ctx.restore();
 
@@ -415,10 +415,11 @@ export function VideoRecorder({
         }
       }
 
-      // Test multiple codecs
+      // Test multiple codecs - prioritize MP4 for WhatsApp/Instagram compatibility
       const codecs = [
+        'video/mp4',                    // MP4 (best for social media) - Safari support
         'video/webm;codecs=vp8,opus',  // VP8 video + Opus audio
-        'video/webm;codecs=vp9,opus',  // VP9 video + Opus audio
+        'video/webm;codecs=vp9,opus',  // VP9 video + Opus audio  
         'video/webm',                   // Let browser choose
         '' // default
       ];
@@ -554,10 +555,14 @@ export function VideoRecorder({
 
   const handleSave = () => {
     if (!videoBlob) return;
+    
+    // Determine file extension based on blob type
+    const fileExtension = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
+    
     const url = URL.createObjectURL(videoBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `chakra-meditation-${Date.now()}.webm`;
+    a.download = `chakra-meditation-${Date.now()}.${fileExtension}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -567,7 +572,11 @@ export function VideoRecorder({
   const handleShare = async () => {
     if (!videoBlob) return;
     try {
-      const file = new File([videoBlob], `chakra-${Date.now()}.webm`, { type: 'video/webm' });
+      // Determine file extension based on blob type
+      const fileExtension = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
+      const mimeType = videoBlob.type || 'video/webm';
+      
+      const file = new File([videoBlob], `chakra-meditation-${Date.now()}.${fileExtension}`, { type: mimeType });
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file] });
       } else {
