@@ -134,23 +134,40 @@ export function VideoRecorder({
   };
 
   const drawCompositeFrame = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-    const width = canvas.width;
-    const height = canvas.height;
-    const halfHeight = height / 2;
+    const width = canvas.width; // 1080
+    const height = canvas.height; // 1920
+    const halfHeight = height / 2; // 960
 
-    // Clear
+    // Clear entire canvas
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, width, height);
 
-    // Top: Camera feed
+    // Top half: Camera feed (with proper aspect ratio fitting)
     if (videoRef.current && videoRef.current.readyState >= 2) {
-      ctx.drawImage(videoRef.current, 0, 0, width, halfHeight);
+      const video = videoRef.current;
+      const videoAspect = video.videoWidth / video.videoHeight;
+      const targetAspect = width / halfHeight;
+      
+      let sourceX = 0, sourceY = 0, sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
+      
+      // Crop video to fill the top half (cover mode)
+      if (videoAspect > targetAspect) {
+        // Video is wider - crop sides
+        sourceWidth = video.videoHeight * targetAspect;
+        sourceX = (video.videoWidth - sourceWidth) / 2;
+      } else {
+        // Video is taller - crop top/bottom
+        sourceHeight = video.videoWidth / targetAspect;
+        sourceY = (video.videoHeight - sourceHeight) / 2;
+      }
+      
+      ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, halfHeight);
     } else {
       ctx.fillStyle = '#1a1a1a';
       ctx.fillRect(0, 0, width, halfHeight);
     }
 
-    // Bottom: Mandala
+    // Bottom half: Mandala (centered and scaled to fit)
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(0, halfHeight, width, halfHeight);
     
@@ -159,38 +176,30 @@ export function VideoRecorder({
     
     if (mandalaCanvas) {
       try {
-        const mandalaAspect = mandalaCanvas.width / mandalaCanvas.height;
-        const targetAspect = width / halfHeight;
+        // The mandala is square, so we fit it centered in the bottom half
+        const mandalaSize = Math.min(width, halfHeight) * 0.95; // 95% to leave some padding
+        const offsetX = (width - mandalaSize) / 2;
+        const offsetY = halfHeight + (halfHeight - mandalaSize) / 2;
         
-        let drawWidth, drawHeight, offsetX, offsetY;
-        if (mandalaAspect > targetAspect) {
-          drawWidth = width;
-          drawHeight = width / mandalaAspect;
-          offsetX = 0;
-          offsetY = halfHeight + (halfHeight - drawHeight) / 2;
-        } else {
-          drawHeight = halfHeight;
-          drawWidth = halfHeight * mandalaAspect;
-          offsetX = (width - drawWidth) / 2;
-          offsetY = halfHeight;
-        }
-        
-        ctx.drawImage(mandalaCanvas, offsetX, offsetY, drawWidth, drawHeight);
+        ctx.drawImage(mandalaCanvas, offsetX, offsetY, mandalaSize, mandalaSize);
       } catch (err) {
         console.error('Error drawing mandala:', err);
       }
     }
 
-    // Dividing line
+    // Dividing line between camera and mandala
     ctx.strokeStyle = chakraColor;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(0, halfHeight);
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Watermark
-    const wmHeight = 70, wmPadding = 15, wmWidth = 320;
+    // Watermark (bottom right corner)
+    const wmHeight = 60;
+    const wmPadding = 20;
+    const wmWidth = 280;
+    
     const gradient = ctx.createLinearGradient(
       width - wmWidth - wmPadding, height - wmHeight - wmPadding,
       width - wmPadding, height - wmPadding
@@ -207,31 +216,35 @@ export function VideoRecorder({
     ctx.strokeRect(width - wmWidth - wmPadding, height - wmHeight - wmPadding, wmWidth, wmHeight);
 
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = 8;
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 26px Arial';
+    ctx.font = 'bold 22px Arial';
     ctx.textAlign = 'right';
-    ctx.fillText('SoundMeditationPilot', width - wmPadding - 15, height - wmPadding - 35);
-    ctx.font = '16px Arial';
+    ctx.fillText('SoundMeditationPilot', width - wmPadding - 10, height - wmPadding - 30);
+    ctx.font = '14px Arial';
     ctx.fillStyle = '#ffffffcc';
-    ctx.fillText('🧘 Chakra Sound Mixing', width - wmPadding - 15, height - wmPadding - 12);
+    ctx.fillText('🧘 Chakra Sound Mixing', width - wmPadding - 10, height - wmPadding - 10);
     ctx.restore();
 
-    // Recording indicator
+    // Recording timer (on the dividing line, centered)
     if (recordingState === 'recording') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-      ctx.fillRect(width / 2 - 80, halfHeight - 40, 160, 80);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(width / 2 - 70, halfHeight - 35, 140, 70);
+      
+      // Red dot
       ctx.fillStyle = '#ff0000';
       ctx.beginPath();
-      ctx.arc(width / 2 - 50, halfHeight, 8, 0, Math.PI * 2);
+      ctx.arc(width / 2 - 45, halfHeight, 7, 0, Math.PI * 2);
       ctx.fill();
+      
+      // Timer text
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 36px monospace';
+      ctx.font = 'bold 32px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`${countdown}s`, width / 2 + 10, halfHeight + 12);
+      ctx.fillText(`${countdown}s`, width / 2 + 5, halfHeight + 10);
     }
   };
 
@@ -253,8 +266,8 @@ export function VideoRecorder({
 
     try {
       const canvas = canvasRef.current;
-      canvas.width = 1280;
-      canvas.height = 1440;
+      canvas.width = 1080;
+      canvas.height = 1920;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas failed');
 
