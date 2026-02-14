@@ -287,56 +287,57 @@ export function VideoRecorder({
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Watermark (bottom right corner) - Simple text watermark
+    // Watermark (top of dividing line, right side) - Clean text watermark that doesn't overlap mandala
     ctx.save();
     
     const text = 'Sound Meditation Pilot';
-    const wmPadding = 25;
+    const wmPadding = 20;
     
     // Use system font similar to app
-    ctx.font = '18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
+    ctx.textBaseline = 'middle';
     
     // Measure text
     const textMetrics = ctx.measureText(text);
     const textWidth = textMetrics.width;
-    const textHeight = 24;
-    const bgPadding = 12;
+    const textHeight = 20;
+    const bgPadding = 10;
     
-    // Position at bottom right
+    // Position at dividing line, right side (above the mandala area)
     const bgX = width - textWidth - bgPadding * 2 - wmPadding;
-    const bgY = height - textHeight - bgPadding * 2 - wmPadding;
+    const bgY = halfHeight - (textHeight + bgPadding * 2) / 2;
     
-    // Background with subtle gradient
-    const gradient = ctx.createLinearGradient(bgX, bgY, bgX, bgY + textHeight + bgPadding * 2);
-    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.75)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.85)');
-    ctx.fillStyle = gradient;
+    // Background with chakra color accent
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.roundRect(
       bgX,
       bgY,
       textWidth + bgPadding * 2,
       textHeight + bgPadding * 2,
-      8
+      6
     );
     ctx.fill();
     
-    // Text with glow matching chakra color
+    // Subtle chakra-colored border
+    ctx.strokeStyle = chakraColor;
+    ctx.lineWidth = 2;
+    ctx.roundRect(
+      bgX,
+      bgY,
+      textWidth + bgPadding * 2,
+      textHeight + bgPadding * 2,
+      6
+    );
+    ctx.stroke();
+    
+    // Text with subtle chakra-colored glow
     ctx.shadowColor = chakraColor;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 8;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(text, width - bgPadding - wmPadding, height - bgPadding - wmPadding - 4);
-    
-    // Reset shadow and add subtle inner glow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(text, width - bgPadding - wmPadding, height - bgPadding - wmPadding - 4);
+    ctx.fillText(text, width - bgPadding - wmPadding, halfHeight);
     
     ctx.restore();
 
