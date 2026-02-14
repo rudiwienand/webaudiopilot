@@ -572,35 +572,50 @@ export function VideoRecorder({
     setShowShareMenu(true);
   };
 
-  const shareToSocialMedia = async (platform: 'instagram' | 'facebook' | 'whatsapp' | 'telegram') => {
+  const shareToSocialMedia = async (platform: 'instagram' | 'facebook' | 'whatsapp' | 'telegram' | 'upscrolled') => {
     if (!videoBlob) return;
     
-    // First download the video
+    const file = new File([videoBlob], `chakra-meditation-${Date.now()}.mp4`, { type: 'video/mp4' });
+    
+    // Try native share API first (works on mobile)
+    if (navigator.share) {
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'My Meditation Session',
+            text: 'Check out my meditation session from Sound Meditation Pilot!'
+          });
+          setShowShareMenu(false);
+          return;
+        }
+      } catch (err) {
+        console.log('Native share failed, using platform-specific method');
+      }
+    }
+    
+    // Fallback: Download video and guide user
     handleSave();
     
-    // Then open the respective social media platform
-    const shareText = 'Check out my meditation session from Sound Meditation Pilot!';
-    const appUrl = window.location.href;
-    
     switch (platform) {
+      case 'upscrolled':
+        alert('Video downloaded! Please open Upscrolled app and upload the video from your device.');
+        break;
+      
       case 'instagram':
-        // Instagram doesn't support direct web sharing, user needs to upload manually
         alert('Video downloaded! Please open Instagram app and upload the video from your device.');
         break;
       
       case 'facebook':
-        // Facebook sharing (opens Facebook to make a post)
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank');
+        alert('Video downloaded! Please open Facebook app and upload the video from your device.');
         break;
       
       case 'whatsapp':
-        // WhatsApp sharing
-        window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + appUrl)}`, '_blank');
+        alert('Video downloaded! Please open WhatsApp, select a chat, and attach the video from your device.');
         break;
       
       case 'telegram':
-        // Telegram sharing
-        window.open(`https://t.me/share/url?url=${encodeURIComponent(appUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+        alert('Video downloaded! Please open Telegram, select a chat, and attach the video from your device.');
         break;
     }
     
@@ -700,6 +715,13 @@ export function VideoRecorder({
                 >
                   <span className="text-2xl">✈️</span>
                   <span className="font-semibold">Telegram</span>
+                </button>
+                <button 
+                  onClick={() => shareToSocialMedia('upscrolled')} 
+                  className="bg-indigo-600 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                >
+                  <span className="text-2xl">🚀</span>
+                  <span className="font-semibold">Upscrolled</span>
                 </button>
               </div>
             </div>
