@@ -779,7 +779,7 @@ export function VideoRecorder({
                 </div>
               </div>
             )}
-          </div>
+         </div>
 
           {/* Stop button */}
           {recordingState === 'recording' && (
