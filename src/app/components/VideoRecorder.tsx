@@ -577,7 +577,7 @@ export function VideoRecorder({
     
     const file = new File([videoBlob], `chakra-meditation-${Date.now()}.mp4`, { type: 'video/mp4' });
     
-    // Try native share API first (works on mobile)
+    // Try Web Share API with files (works on mobile for all apps)
     if (navigator.share) {
       try {
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -589,34 +589,88 @@ export function VideoRecorder({
           setShowShareMenu(false);
           return;
         }
-      } catch (err) {
-        console.log('Native share failed, using platform-specific method');
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.log('Web Share API failed:', err);
+        } else {
+          // User cancelled, just close menu
+          setShowShareMenu(false);
+          return;
+        }
       }
     }
     
-    // Fallback: Download video and guide user
+    // Fallback: Try to open the app directly with URL schemes
+    const shareText = encodeURIComponent('Check out my meditation session from Sound Meditation Pilot!');
+    
+    // First download the video
     handleSave();
     
+    // Small delay to ensure download starts
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Try to open the respective app
+    let appUrl = '';
+    let webUrl = '';
+    
     switch (platform) {
-      case 'upscrolled':
-        alert('Video downloaded! Please open Upscrolled app and upload the video from your device.');
-        break;
-      
       case 'instagram':
-        alert('Video downloaded! Please open Instagram app and upload the video from your device.');
+        // Instagram Stories/Feed - try app first, then web
+        appUrl = 'instagram://';
+        webUrl = 'https://www.instagram.com/';
         break;
       
       case 'facebook':
-        alert('Video downloaded! Please open Facebook app and upload the video from your device.');
+        // Facebook app or web
+        appUrl = 'fb://';
+        webUrl = 'https://www.facebook.com/';
         break;
       
       case 'whatsapp':
-        alert('Video downloaded! Please open WhatsApp, select a chat, and attach the video from your device.');
+        // WhatsApp with text
+        appUrl = `whatsapp://send?text=${shareText}`;
+        webUrl = `https://wa.me/?text=${shareText}`;
         break;
       
       case 'telegram':
-        alert('Video downloaded! Please open Telegram, select a chat, and attach the video from your device.');
+        // Telegram with text
+        appUrl = `tg://msg?text=${shareText}`;
+        webUrl = `https://t.me/share/url?text=${shareText}`;
         break;
+      
+      case 'upscrolled':
+        // Upscrolled - try app first
+        appUrl = 'upscrolled://';
+        webUrl = 'https://upscrolled.com/';
+        break;
+    }
+    
+    // Try to open the app
+    try {
+      // Attempt to open the app
+      window.location.href = appUrl;
+      
+      // Fallback to web version after a short delay if app didn't open
+      setTimeout(() => {
+        window.open(webUrl, '_blank');
+      }, 1500);
+      
+      // Show success message
+      const messages: Record<typeof platform, string> = {
+        instagram: 'Opening Instagram... Please upload the downloaded video.',
+        facebook: 'Opening Facebook... Please upload the downloaded video.',
+        whatsapp: 'Opening WhatsApp... Please attach the downloaded video.',
+        telegram: 'Opening Telegram... Please attach the downloaded video.',
+        upscrolled: 'Opening Upscrolled... Please upload the downloaded video.'
+      };
+      
+      setTimeout(() => {
+        alert(messages[platform]);
+      }, 500);
+      
+    } catch (err) {
+      console.error('Failed to open app:', err);
+      alert(`Video downloaded! Please open ${platform} and upload the video manually.`);
     }
     
     setShowShareMenu(false);
@@ -779,7 +833,7 @@ export function VideoRecorder({
                 </div>
               </div>
             )}
-         </div>
+          </div>
 
           {/* Stop button */}
           {recordingState === 'recording' && (
