@@ -55,6 +55,7 @@ export function VideoRecorder({
   const animationFrameRef = useRef<number | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const logoImageRef = useRef<HTMLImageElement | null>(null);
+  const watermarkCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const safeTracks = tracks && tracks.length > 0 ? tracks : Array.from({ length: 9 }, (_, i) => ({
     id: i + 1,
@@ -137,15 +138,92 @@ export function VideoRecorder({
 
   const loadLogo = () => {
     const logoImage = new Image();
-    logoImage.crossOrigin = 'anonymous'; // Enable cross-origin for better rendering
+    logoImage.crossOrigin = 'anonymous';
     logoImage.src = '/TTF_Logo.png';
     logoImage.onload = () => {
       logoImageRef.current = logoImage;
       console.log('✅ Logo loaded successfully', logoImage.width, 'x', logoImage.height);
+      
+      // Pre-render watermark at high quality
+      createHighQualityWatermark();
     };
     logoImage.onerror = () => {
       console.error('Failed to load logo from /TTF_Logo.png');
     };
+  };
+
+  const createHighQualityWatermark = () => {
+    if (!logoImageRef.current) return;
+    
+    const scale = 3; // Render at 3x resolution for ultra-sharp quality
+    const logoSize = 84 * scale;
+    const text = 'SoundMeditationPilot';
+    const textRadius = logoSize / 2 + 32 * scale;
+    const containerSize = textRadius * 2 + 30 * scale;
+    
+    // Create offscreen canvas
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = containerSize;
+    offCanvas.height = containerSize;
+    const offCtx = offCanvas.getContext('2d', { alpha: true })!;
+    
+    // Enable best quality
+    offCtx.imageSmoothingEnabled = true;
+    offCtx.imageSmoothingQuality = 'high';
+    
+    const centerX = containerSize / 2;
+    const centerY = containerSize / 2;
+    
+    // Background circle
+    offCtx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    offCtx.beginPath();
+    offCtx.arc(centerX, centerY, containerSize / 2 - 5 * scale, 0, Math.PI * 2);
+    offCtx.fill();
+    
+    // Draw logo at center
+    const logoX = centerX - logoSize / 2;
+    const logoY = centerY - logoSize / 2;
+    
+    offCtx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    offCtx.shadowBlur = 12 * scale;
+    offCtx.shadowOffsetX = 3 * scale;
+    offCtx.shadowOffsetY = 3 * scale;
+    
+    offCtx.drawImage(
+      logoImageRef.current,
+      logoX,
+      logoY,
+      logoSize,
+      logoSize
+    );
+    
+    // Draw curved text
+    offCtx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    offCtx.shadowBlur = 8 * scale;
+    offCtx.shadowOffsetX = 2 * scale;
+    offCtx.shadowOffsetY = 2 * scale;
+    offCtx.fillStyle = '#ffffff';
+    offCtx.font = `bold ${13 * scale}px Arial, sans-serif`;
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    
+    const angleStep = (Math.PI * 2) / text.length;
+    const startAngle = -Math.PI / 2;
+    
+    for (let i = 0; i < text.length; i++) {
+      const angle = startAngle + i * angleStep;
+      const x = centerX + Math.cos(angle) * textRadius;
+      const y = centerY + Math.sin(angle) * textRadius;
+      
+      offCtx.save();
+      offCtx.translate(x, y);
+      offCtx.rotate(angle + Math.PI / 2);
+      offCtx.fillText(text[i], 0, 0);
+      offCtx.restore();
+    }
+    
+    watermarkCanvasRef.current = offCanvas;
+    console.log('✅ High-quality watermark pre-rendered at', containerSize, 'x', containerSize);
   };
 
   const drawCompositeFrame = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
@@ -210,106 +288,28 @@ export function VideoRecorder({
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Watermark (bottom right corner) - High quality with logo and curved text all around
-    const wmPadding = 20;
-    const logoSize = 84; // 70% of 120 = 84px
-    
-    ctx.save();
-    
-    if (logoImageRef.current) {
-      // Enable high-quality image rendering
+    // Watermark (bottom right corner) - Use pre-rendered high-quality watermark
+    if (watermarkCanvasRef.current) {
+      const wmSize = 120; // Final display size
+      const wmPadding = 20;
+      const wmX = width - wmSize - wmPadding;
+      const wmY = height - wmSize - wmPadding;
+      
+      ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       
-      const text = 'SoundMeditationPilot';
-      
-      // Calculate container size (logo + space for curved text)
-      const textRadius = logoSize / 2 + 32; // Text curves 32px outside logo (70% of 45)
-      const containerSize = (textRadius * 2 + 25) * 0.7; // Scale everything by 70%
-      
-      // Position: bottom right with padding
-      const centerX = width - containerSize / 2 - wmPadding;
-      const centerY = height - containerSize / 2 - wmPadding;
-      
-      // Semi-transparent background circle
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, containerSize / 2, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Draw the logo in center at actual size (not from scaled source)
-      const logoX = centerX - logoSize / 2;
-      const logoY = centerY - logoSize / 2;
-      
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
-      
-      // Draw logo - use drawImage from full source at reduced size for better quality
+      // Draw the pre-rendered watermark scaled down for perfect quality
       ctx.drawImage(
-        logoImageRef.current,
-        0, 0, logoImageRef.current.width, logoImageRef.current.height, // Source: full image
-        logoX, logoY, logoSize, logoSize // Destination: scaled down
+        watermarkCanvasRef.current,
+        wmX,
+        wmY,
+        wmSize,
+        wmSize
       );
       
-      // Draw curved text all around the logo (360 degrees)
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetX = 1.5;
-      ctx.shadowOffsetY = 1.5;
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 13px Arial'; // 70% of 18px
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      
-      // Calculate angle for each character to go full circle (360 degrees)
-      const angleStep = (Math.PI * 2) / text.length; // Full 360 degrees
-      const startAngle = -Math.PI / 2; // Start from top (12 o'clock)
-      
-      for (let i = 0; i < text.length; i++) {
-        const angle = startAngle + i * angleStep;
-        const x = centerX + Math.cos(angle) * textRadius;
-        const y = centerY + Math.sin(angle) * textRadius;
-        
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle + Math.PI / 2); // Rotate to follow curve
-        ctx.fillText(text[i], 0, 0);
-        ctx.restore();
-      }
-      
-    } else {
-      // Fallback text-only watermark if logo doesn't load
-      const text = 'SoundMeditationPilot';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'bottom';
-      
-      // Background
-      const textMetrics = ctx.measureText(text);
-      const bgPadding = 12;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-      ctx.roundRect(
-        width - textMetrics.width - bgPadding * 2 - wmPadding,
-        height - 32 - bgPadding * 2 - wmPadding,
-        textMetrics.width + bgPadding * 2,
-        32 + bgPadding * 2,
-        10
-      );
-      ctx.fill();
-      
-      // Text with shadow
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(text, width - bgPadding - wmPadding, height - bgPadding - wmPadding);
+      ctx.restore();
     }
-    
-    ctx.restore();
 
     // Recording timer (on the dividing line, centered)
     if (recordingState === 'recording') {
