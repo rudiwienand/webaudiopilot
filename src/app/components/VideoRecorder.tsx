@@ -577,10 +577,12 @@ export function VideoRecorder({
     
     const file = new File([videoBlob], `chakra-meditation-${Date.now()}.mp4`, { type: 'video/mp4' });
     
-    // Try Web Share API with files (works on mobile for all apps)
+    // First, always try Web Share API (works on mobile and can share files)
     if (navigator.share) {
       try {
+        // Check if we can share files
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          console.log('✅ Sharing video file via Web Share API');
           await navigator.share({
             files: [file],
             title: 'My Meditation Session',
@@ -588,89 +590,71 @@ export function VideoRecorder({
           });
           setShowShareMenu(false);
           return;
+        } else {
+          console.log('❌ Cannot share files via Web Share API');
         }
       } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.log('Web Share API failed:', err);
-        } else {
-          // User cancelled, just close menu
+        if (err.name === 'AbortError') {
+          // User cancelled the share, just close menu
+          console.log('User cancelled share');
           setShowShareMenu(false);
           return;
         }
+        console.log('Web Share API failed:', err);
       }
     }
     
-    // Fallback: Try to open the app directly with URL schemes
-    const shareText = encodeURIComponent('Check out my meditation session from Sound Meditation Pilot!');
-    
-    // First download the video
+    // Fallback: Download the video and provide instructions
+    // URL schemes cannot share files, only open apps
+    console.log('Fallback: Downloading video for manual sharing');
     handleSave();
     
-    // Small delay to ensure download starts
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const platformNames: Record<typeof platform, string> = {
+      instagram: 'Instagram',
+      facebook: 'Facebook',
+      whatsapp: 'WhatsApp',
+      telegram: 'Telegram',
+      upscrolled: 'Upscrolled'
+    };
     
-    // Try to open the respective app
-    let appUrl = '';
-    let webUrl = '';
+    const instructions: Record<typeof platform, string> = {
+      instagram: 'Video downloaded!\n\n1. Open Instagram app\n2. Create a new Post or Story\n3. Select the downloaded video\n4. Add caption and share!',
+      facebook: 'Video downloaded!\n\n1. Open Facebook app\n2. Create a new Post\n3. Tap "Photo/Video"\n4. Select the downloaded video\n5. Add caption and share!',
+      whatsapp: 'Video downloaded!\n\n1. Open WhatsApp\n2. Select a chat\n3. Tap the attachment icon (📎)\n4. Choose "Gallery" or "Photos"\n5. Select the downloaded video\n6. Send!',
+      telegram: 'Video downloaded!\n\n1. Open Telegram\n2. Select a chat\n3. Tap the attachment icon (📎)\n4. Choose "Gallery" or "Photos"\n5. Select the downloaded video\n6. Send!',
+      upscrolled: 'Video downloaded!\n\n1. Open Upscrolled app\n2. Create a new post\n3. Select the downloaded video\n4. Add caption and share!'
+    };
     
-    switch (platform) {
-      case 'instagram':
-        // Instagram Stories/Feed - try app first, then web
-        appUrl = 'instagram://';
-        webUrl = 'https://www.instagram.com/';
-        break;
-      
-      case 'facebook':
-        // Facebook app or web
-        appUrl = 'fb://';
-        webUrl = 'https://www.facebook.com/';
-        break;
-      
-      case 'whatsapp':
-        // WhatsApp with text
-        appUrl = `whatsapp://send?text=${shareText}`;
-        webUrl = `https://wa.me/?text=${shareText}`;
-        break;
-      
-      case 'telegram':
-        // Telegram with text
-        appUrl = `tg://msg?text=${shareText}`;
-        webUrl = `https://t.me/share/url?text=${shareText}`;
-        break;
-      
-      case 'upscrolled':
-        // Upscrolled - try app first
-        appUrl = 'upscrolled://';
-        webUrl = 'https://upscrolled.com/';
-        break;
-    }
+    alert(instructions[platform]);
     
-    // Try to open the app
+    // Try to open the app (will only open the app, won't attach the video)
+    const appUrls: Record<typeof platform, string> = {
+      instagram: 'instagram://',
+      facebook: 'fb://',
+      whatsapp: 'whatsapp://',
+      telegram: 'tg://',
+      upscrolled: 'upscrolled://'
+    };
+    
+    const webUrls: Record<typeof platform, string> = {
+      instagram: 'https://www.instagram.com/',
+      facebook: 'https://www.facebook.com/',
+      whatsapp: 'https://web.whatsapp.com/',
+      telegram: 'https://web.telegram.org/',
+      upscrolled: 'https://upscrolled.com/'
+    };
+    
+    // Try to open the native app
     try {
-      // Attempt to open the app
-      window.location.href = appUrl;
+      window.location.href = appUrls[platform];
       
-      // Fallback to web version after a short delay if app didn't open
+      // Fallback to web if app doesn't open
       setTimeout(() => {
-        window.open(webUrl, '_blank');
-      }, 1500);
-      
-      // Show success message
-      const messages: Record<typeof platform, string> = {
-        instagram: 'Opening Instagram... Please upload the downloaded video.',
-        facebook: 'Opening Facebook... Please upload the downloaded video.',
-        whatsapp: 'Opening WhatsApp... Please attach the downloaded video.',
-        telegram: 'Opening Telegram... Please attach the downloaded video.',
-        upscrolled: 'Opening Upscrolled... Please upload the downloaded video.'
-      };
-      
-      setTimeout(() => {
-        alert(messages[platform]);
-      }, 500);
-      
+        window.open(webUrls[platform], '_blank');
+      }, 2000);
     } catch (err) {
-      console.error('Failed to open app:', err);
-      alert(`Video downloaded! Please open ${platform} and upload the video manually.`);
+      // If that fails, just open the web version
+      window.open(webUrls[platform], '_blank');
     }
     
     setShowShareMenu(false);
