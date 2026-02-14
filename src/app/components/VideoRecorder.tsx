@@ -209,34 +209,52 @@ export function VideoRecorder({
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
-    // Watermark (bottom right corner) - Simple and elegant design
-    const wmPadding = 15;
-    const logoHeight = 50; // Height for the logo
+    // Watermark (bottom right corner) - High quality with logo and text
+    const wmPadding = 20;
+    const logoHeight = 80; // Increased from 50 for better visibility
     
     ctx.save();
     
     if (logoImageRef.current) {
+      // Enable high-quality image rendering
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
       // Calculate logo dimensions maintaining aspect ratio
       const logoAspect = logoImageRef.current.width / logoImageRef.current.height;
       const logoWidth = logoHeight * logoAspect;
       
+      // Text settings
+      const text = 'SoundMeditationPilot';
+      ctx.font = 'bold 22px Arial';
+      const textMetrics = ctx.measureText(text);
+      const textWidth = textMetrics.width;
+      const textHeight = 26;
+      
+      // Calculate total dimensions
+      const totalWidth = Math.max(logoWidth, textWidth);
+      const totalHeight = logoHeight + textHeight + 10; // 10px gap between logo and text
+      
       // Position: bottom right with padding
-      const logoX = width - logoWidth - wmPadding;
-      const logoY = height - logoHeight - wmPadding;
+      const containerX = width - totalWidth - wmPadding;
+      const containerY = height - totalHeight - wmPadding;
       
       // Semi-transparent background for readability
-      const bgPadding = 10;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      const bgPadding = 12;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.roundRect(
-        logoX - bgPadding,
-        logoY - bgPadding,
-        logoWidth + bgPadding * 2,
-        logoHeight + bgPadding * 2,
-        8
+        containerX - bgPadding,
+        containerY - bgPadding,
+        totalWidth + bgPadding * 2,
+        totalHeight + bgPadding * 2,
+        10
       );
       ctx.fill();
       
-      // Draw the logo
+      // Draw the logo (centered horizontally if narrower than text)
+      const logoX = containerX + (totalWidth - logoWidth) / 2;
+      const logoY = containerY;
+      
       ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
       ctx.shadowBlur = 8;
       ctx.shadowOffsetX = 2;
@@ -249,30 +267,41 @@ export function VideoRecorder({
         logoWidth,
         logoHeight
       );
+      
+      // Draw the text below the logo
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(text, containerX + totalWidth / 2, containerY + logoHeight + 10);
+      
     } else {
       // Fallback text-only watermark if logo doesn't load
-      const text = 'Sound Meditation Pilot';
-      ctx.font = 'bold 20px Arial';
+      const text = 'SoundMeditationPilot';
+      ctx.font = 'bold 24px Arial';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'bottom';
       
       // Background
       const textMetrics = ctx.measureText(text);
-      const bgPadding = 10;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      const bgPadding = 12;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.roundRect(
         width - textMetrics.width - bgPadding * 2 - wmPadding,
-        height - 30 - bgPadding * 2 - wmPadding,
+        height - 36 - bgPadding * 2 - wmPadding,
         textMetrics.width + bgPadding * 2,
-        30 + bgPadding * 2,
-        8
+        36 + bgPadding * 2,
+        10
       );
       ctx.fill();
       
       // Text with shadow
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      ctx.shadowBlur = 6;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = 8;
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
       ctx.fillStyle = '#ffffff';
