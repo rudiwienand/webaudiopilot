@@ -138,13 +138,13 @@ export function VideoRecorder({
   const loadLogo = () => {
     const logoImage = new Image();
     logoImage.crossOrigin = 'anonymous'; // Enable cross-origin for better rendering
-    logoImage.src = '/tuningforklogo.png';
+    logoImage.src = '/TTF_Logo.png';
     logoImage.onload = () => {
       logoImageRef.current = logoImage;
       console.log('✅ Logo loaded successfully', logoImage.width, 'x', logoImage.height);
     };
     logoImage.onerror = () => {
-      console.error('Failed to load logo from /tuningforklogo.png');
+      console.error('Failed to load logo from /TTF_Logo.png');
     };
   };
 
