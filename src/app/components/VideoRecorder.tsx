@@ -624,31 +624,31 @@ export function VideoRecorder({
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Close button - always visible */}
+      {/* Close button - ALWAYS VISIBLE AT TOP LAYER */}
       <button 
         onClick={onClose} 
-        className="absolute top-4 right-4 z-[200] w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20"
+        className="absolute top-4 right-4 z-[999] w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 shadow-2xl"
       >
         <X className="w-6 h-6 text-white" />
       </button>
 
-      {/* Camera switch - always visible in setup mode */}
+      {/* Camera switch - ALWAYS VISIBLE AT TOP LAYER */}
       {recordingState === 'setup' && (
         <button
           onClick={() => {
-            console.log('Switching camera from', facingMode, 'to', facingMode === 'user' ? 'environment' : 'user');
+            console.log('🔄 Switching camera from', facingMode, 'to', facingMode === 'user' ? 'environment' : 'user');
             setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
           }}
-          className="absolute top-4 left-4 z-[200] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2 shadow-lg hover:scale-105 transition-transform"
+          className="absolute top-4 left-4 z-[999] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2 shadow-2xl hover:scale-105 transition-transform backdrop-blur-sm"
         >
           <Video className="w-5 h-5" />
           <span className="text-sm font-bold">{facingMode === 'user' ? '🤳 Front' : '📸 Back'}</span>
         </button>
       )}
 
-      {/* Error */}
+      {/* Error - ALWAYS VISIBLE */}
       {cameraError && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[150] bg-red-500/90 text-white px-6 py-3 rounded-lg max-w-md text-center">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[999] bg-red-500/90 text-white px-6 py-3 rounded-lg max-w-md text-center shadow-2xl">
           {cameraError}
         </div>
       )}
@@ -688,7 +688,7 @@ export function VideoRecorder({
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover absolute inset-0 z-0"
               style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
             />
             
