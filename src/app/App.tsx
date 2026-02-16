@@ -192,6 +192,9 @@ export default function App() {
       currentChakra?.isPlaying || false,
     );
 
+  // Check if tracks are currently loading
+  const isLoadingTracks = isInitialized && loadingProgress < 100;
+
   const handleVolumeChange = (
     trackId: number,
     volume: number,
@@ -599,6 +602,7 @@ export default function App() {
             isInitialized={isInitialized}
             loadingProgress={loadingProgress}
             loadError={loadError}
+            isLoadingTracks={isLoadingTracks}
             controllerPosition={controllerPositions.get(
               selectedChakra,
             )}

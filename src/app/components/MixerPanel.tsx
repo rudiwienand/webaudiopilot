@@ -27,6 +27,7 @@ interface MixerPanelProps {
   isInitialized: boolean;
   loadingProgress: number;
   loadError: string | null;
+  isLoadingTracks: boolean;
   controllerPosition?: { x: number; y: number };
   onControllerMove?: (x: number, y: number) => void;
   audioContext?: AudioContext | null;
@@ -49,6 +50,7 @@ export function MixerPanel({
   isInitialized,
   loadingProgress,
   loadError,
+  isLoadingTracks,
   controllerPosition,
   onControllerMove,
   audioContext,
@@ -150,7 +152,8 @@ export function MixerPanel({
           <div className="flex flex-col items-center flex-1">
             <button
               onClick={onToggleChakraPlay}
-              className="w-20 h-20 mb-3 rounded-full border-4 border-white/30 flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
+              disabled={isLoadingTracks}
+              className={`w-20 h-20 mb-3 rounded-full border-4 border-white/30 flex items-center justify-center transition-all duration-300 hover:scale-110 relative group ${isLoadingTracks ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ 
                 backgroundColor: chakraColor,
                 boxShadow: `0 0 30px ${chakraColor}60`
@@ -171,8 +174,10 @@ export function MixerPanel({
         <div className="flex flex-col items-center gap-2 mb-4">
           <button
             onClick={onStartAutoMix}
+            disabled={isLoadingTracks}
             className={`
               px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2
+              ${isLoadingTracks ? 'opacity-50 cursor-not-allowed' : ''}
               ${isAutoMixing 
                 ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' 
                 : 'bg-slate-700/80 hover:bg-slate-600/80 text-white/90'
@@ -202,7 +207,8 @@ export function MixerPanel({
       <div className="mt-6 flex justify-center">
         <button
           onClick={() => setShowVideoRecorder(true)}
-          className="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg"
+          disabled={isLoadingTracks}
+          className={`px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg ${isLoadingTracks ? 'opacity-50 cursor-not-allowed' : ''}`}
           style={{ boxShadow: `0 0 20px ${chakraColor}60` }}
         >
           <Video className="w-5 h-5" />
