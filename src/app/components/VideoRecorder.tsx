@@ -627,8 +627,7 @@ export function VideoRecorder({
       {/* Close button - MAXIMUM Z-INDEX */}
       <button 
         onClick={onClose} 
-        className="fixed top-4 right-4 z-[9999] w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 shadow-2xl"
-        style={{ position: 'fixed' }}
+        className="absolute top-4 right-4 z-[9999] w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 shadow-2xl"
       >
         <X className="w-6 h-6 text-white" />
       </button>
@@ -640,8 +639,7 @@ export function VideoRecorder({
             console.log('🔄 Switching camera from', facingMode, 'to', facingMode === 'user' ? 'environment' : 'user');
             setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
           }}
-          className="fixed top-4 left-4 z-[9999] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2 shadow-2xl hover:scale-105 transition-transform backdrop-blur-sm"
-          style={{ position: 'fixed' }}
+          className="absolute top-4 left-4 z-[9999] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2 shadow-2xl hover:scale-105 transition-transform backdrop-blur-sm"
         >
           <Video className="w-5 h-5" />
           <span className="text-sm font-bold">{facingMode === 'user' ? '🤳 Front' : '📸 Back'}</span>
@@ -650,7 +648,7 @@ export function VideoRecorder({
 
       {/* Error - MAXIMUM Z-INDEX */}
       {cameraError && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] bg-red-500/90 text-white px-6 py-3 rounded-lg max-w-md text-center shadow-2xl">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[9999] bg-red-500/90 text-white px-6 py-3 rounded-lg max-w-md text-center shadow-2xl">
           {cameraError}
         </div>
       )}
