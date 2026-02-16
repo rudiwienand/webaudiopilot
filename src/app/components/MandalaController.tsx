@@ -166,11 +166,21 @@ export function MandalaController({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { 
+      alpha: true,
+      willReadFrequently: false,
+      desynchronized: false // Ensure synchronized rendering
+    });
     if (!ctx) return;
 
-    // Clear canvas
+    // Enable high-quality rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Clear canvas completely - no artifacts
     ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = 'transparent';
+    ctx.fillRect(0, 0, size, size);
 
     // Draw outer circle with gradient
     const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
