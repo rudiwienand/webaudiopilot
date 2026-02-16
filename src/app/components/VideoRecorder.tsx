@@ -628,7 +628,7 @@ export function VideoRecorder({
       {recordingState === 'setup' && (
         <button
           onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
-          className="absolute top-4 left-4 z-50 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2"
+          className="absolute top-4 left-4 z-[100] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2"
         >
           <Video className="w-5 h-5" />
           <span className="text-sm font-bold">{facingMode === 'user' ? '🤳 Front' : '📸 Back'}</span>
@@ -693,7 +693,7 @@ export function VideoRecorder({
             
             {/* Record button */}
             {recordingState === 'setup' && cameraReady && (
-              <div className="absolute inset-0 flex items-center justify-center z-20">
+              <div className="absolute inset-0 flex items-center justify-center z-[100]">
                 <div>
                   <button
                     onClick={startRecording}
@@ -711,7 +711,7 @@ export function VideoRecorder({
 
             {/* Countdown */}
             {recordingState === 'recording' && (
-              <div className="absolute inset-0 flex items-center justify-center z-20">
+              <div className="absolute inset-0 flex items-center justify-center z-[100]">
                 <div className="bg-black/70 px-8 py-4 rounded-2xl">
                   <p className="text-red-500 text-6xl font-bold font-mono tabular-nums">{countdown}</p>
                   <p className="text-white/70 text-center text-sm mt-2">Recording...</p>
