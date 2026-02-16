@@ -619,16 +619,22 @@ export function VideoRecorder({
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Close button */}
-      <button onClick={onClose} className="absolute top-4 right-4 z-50 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20">
+      {/* Close button - always visible */}
+      <button 
+        onClick={onClose} 
+        className="absolute top-4 right-4 z-[200] w-12 h-12 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20"
+      >
         <X className="w-6 h-6 text-white" />
       </button>
 
-      {/* Camera switch */}
+      {/* Camera switch - always visible in setup mode */}
       {recordingState === 'setup' && (
         <button
-          onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
-          className="absolute top-4 left-4 z-[100] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2"
+          onClick={() => {
+            console.log('Switching camera from', facingMode, 'to', facingMode === 'user' ? 'environment' : 'user');
+            setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+          }}
+          className="absolute top-4 left-4 z-[200] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2 shadow-lg hover:scale-105 transition-transform"
         >
           <Video className="w-5 h-5" />
           <span className="text-sm font-bold">{facingMode === 'user' ? '🤳 Front' : '📸 Back'}</span>
@@ -637,7 +643,7 @@ export function VideoRecorder({
 
       {/* Error */}
       {cameraError && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-red-500/90 text-white px-6 py-3 rounded-lg max-w-md text-center">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[150] bg-red-500/90 text-white px-6 py-3 rounded-lg max-w-md text-center">
           {cameraError}
         </div>
       )}
