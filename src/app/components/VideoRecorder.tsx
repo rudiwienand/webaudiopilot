@@ -45,7 +45,6 @@ export function VideoRecorder({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [cameraReady, setCameraReady] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -665,53 +664,6 @@ export function VideoRecorder({
               <span>Delete</span>
             </button>
           </div>
-          {showShareMenu && (
-            <div className="absolute bottom-32 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-t-2 border-slate-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-white text-lg font-semibold">Share to Social Media</h3>
-                <button onClick={() => setShowShareMenu(false)} className="text-white/70 hover:text-white">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => shareToSocialMedia('instagram')} 
-                  className="bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
-                >
-                  <span className="text-2xl">📸</span>
-                  <span className="font-semibold">Instagram</span>
-                </button>
-                <button 
-                  onClick={() => shareToSocialMedia('facebook')} 
-                  className="bg-blue-600 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
-                >
-                  <span className="text-2xl">👤</span>
-                  <span className="font-semibold">Facebook</span>
-                </button>
-                <button 
-                  onClick={() => shareToSocialMedia('whatsapp')} 
-                  className="bg-green-600 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
-                >
-                  <span className="text-2xl">💬</span>
-                  <span className="font-semibold">WhatsApp</span>
-                </button>
-                <button 
-                  onClick={() => shareToSocialMedia('telegram')} 
-                  className="bg-sky-600 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
-                >
-                  <span className="text-2xl">✈️</span>
-                  <span className="font-semibold">Telegram</span>
-                </button>
-                <button 
-                  onClick={() => shareToSocialMedia('upscrolled')} 
-                  className="bg-indigo-600 text-white py-4 px-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform"
-                >
-                  <span className="text-2xl">🚀</span>
-                  <span className="font-semibold">Upscrolled</span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -731,7 +683,7 @@ export function VideoRecorder({
             
             {/* Loading overlay */}
             {!cameraReady && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black">
+              <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
                 <div className="text-white text-center">
                   <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                   <p>Loading camera...</p>
@@ -741,8 +693,8 @@ export function VideoRecorder({
             
             {/* Record button */}
             {recordingState === 'setup' && cameraReady && (
-              <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
-                <div className="pointer-events-auto">
+              <div className="absolute inset-0 flex items-center justify-center z-20">
+                <div>
                   <button
                     onClick={startRecording}
                     className="w-24 h-24 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-2xl transition-all hover:scale-110"
@@ -759,7 +711,7 @@ export function VideoRecorder({
 
             {/* Countdown */}
             {recordingState === 'recording' && (
-              <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+              <div className="absolute inset-0 flex items-center justify-center z-20">
                 <div className="bg-black/70 px-8 py-4 rounded-2xl">
                   <p className="text-red-500 text-6xl font-bold font-mono tabular-nums">{countdown}</p>
                   <p className="text-white/70 text-center text-sm mt-2">Recording...</p>
@@ -770,10 +722,10 @@ export function VideoRecorder({
 
           {/* Stop button */}
           {recordingState === 'recording' && (
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex items-center justify-center z-50 pointer-events-none">
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex items-center justify-center z-50">
               <button
                 onClick={stopRecording}
-                className="pointer-events-auto w-20 h-20 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center shadow-2xl"
+                className="w-20 h-20 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center shadow-2xl"
                 style={{ boxShadow: `0 0 30px ${chakraColor}` }}
               >
                 <Square className="w-10 h-10 text-red-600 fill-red-600" />
