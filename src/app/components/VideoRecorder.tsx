@@ -624,31 +624,33 @@ export function VideoRecorder({
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Close button - ALWAYS VISIBLE AT TOP LAYER */}
+      {/* Close button - MAXIMUM Z-INDEX */}
       <button 
         onClick={onClose} 
-        className="absolute top-4 right-4 z-[999] w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 shadow-2xl"
+        className="fixed top-4 right-4 z-[9999] w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 shadow-2xl"
+        style={{ position: 'fixed' }}
       >
         <X className="w-6 h-6 text-white" />
       </button>
 
-      {/* Camera switch - ALWAYS VISIBLE AT TOP LAYER */}
+      {/* Camera switch - MAXIMUM Z-INDEX */}
       {recordingState === 'setup' && (
         <button
           onClick={() => {
             console.log('🔄 Switching camera from', facingMode, 'to', facingMode === 'user' ? 'environment' : 'user');
             setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
           }}
-          className="absolute top-4 left-4 z-[999] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2 shadow-2xl hover:scale-105 transition-transform backdrop-blur-sm"
+          className="fixed top-4 left-4 z-[9999] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-3 rounded-full flex items-center gap-2 shadow-2xl hover:scale-105 transition-transform backdrop-blur-sm"
+          style={{ position: 'fixed' }}
         >
           <Video className="w-5 h-5" />
           <span className="text-sm font-bold">{facingMode === 'user' ? '🤳 Front' : '📸 Back'}</span>
         </button>
       )}
 
-      {/* Error - ALWAYS VISIBLE */}
+      {/* Error - MAXIMUM Z-INDEX */}
       {cameraError && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[999] bg-red-500/90 text-white px-6 py-3 rounded-lg max-w-md text-center shadow-2xl">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] bg-red-500/90 text-white px-6 py-3 rounded-lg max-w-md text-center shadow-2xl">
           {cameraError}
         </div>
       )}
@@ -752,24 +754,34 @@ export function VideoRecorder({
             </div>
           )}
 
-          {/* Chakra controller - bottom half */}
-          <div className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden p-4">
-            <div className="w-full h-full max-w-md max-h-full flex items-center justify-center">
-              <div data-video-recorder-mandala="true">
-                <MandalaController
-                  tracks={safeTracks}
-                  onVolumeChange={onVolumeChange}
-                  chakraColor={chakraColor}
-                  controllerPosition={controllerPosition}
-                  onControllerMove={onControllerMove}
-                  isAutoMixing={isAutoMixing}
-                />
-              </div>
+          {/* Chakra controller - bottom half - HIDDEN VISUALLY but kept in DOM for canvas capture */}
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-slate-900"
+            style={{ 
+              height: '0px',  // Collapse to zero height
+              overflow: 'hidden',
+              visibility: 'hidden',
+              pointerEvents: 'none'
+            }}
+          >
+            <div data-video-recorder-mandala="true">
+              <MandalaController
+                tracks={safeTracks}
+                onVolumeChange={onVolumeChange}
+                chakraColor={chakraColor}
+                controllerPosition={controllerPosition}
+                onControllerMove={onControllerMove}
+                isAutoMixing={isAutoMixing}
+              />
             </div>
           </div>
 
-          {/* Hidden canvas */}
-          <canvas ref={canvasRef} className="hidden" />
+          {/* Canvas overlay - shows the complete composite (camera + mandala) */}
+          <canvas 
+            ref={canvasRef} 
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{ objectFit: 'contain', zIndex: 10 }}
+          />
         </div>
       )}
     </div>
