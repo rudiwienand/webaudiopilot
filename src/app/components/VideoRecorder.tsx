@@ -254,7 +254,15 @@ export function VideoRecorder({
         sourceY = (video.videoHeight - sourceHeight) / 2;
       }
       
-      ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, halfHeight);
+      // Mirror the video when using front camera
+      if (facingMode === 'user') {
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, -width, 0, width, halfHeight);
+        ctx.restore();
+      } else {
+        ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, halfHeight);
+      }
     } else {
       ctx.fillStyle = '#1a1a1a';
       ctx.fillRect(0, 0, width, halfHeight);
@@ -569,15 +577,11 @@ export function VideoRecorder({
   };
 
   const handleShare = async () => {
-    setShowShareMenu(true);
-  };
-
-  const shareToSocialMedia = async (platform: 'instagram' | 'facebook' | 'whatsapp' | 'telegram' | 'upscrolled') => {
     if (!videoBlob) return;
     
     const file = new File([videoBlob], `chakra-meditation-${Date.now()}.mp4`, { type: 'video/mp4' });
     
-    // First, always try Web Share API (works on mobile and can share files)
+    // Directly try Web Share API (works on mobile and can share files)
     if (navigator.share) {
       try {
         // Check if we can share files
@@ -588,76 +592,24 @@ export function VideoRecorder({
             title: 'My Meditation Session',
             text: 'Check out my meditation session from Sound Meditation Pilot!'
           });
-          setShowShareMenu(false);
           return;
         } else {
           console.log('❌ Cannot share files via Web Share API');
         }
       } catch (err: any) {
         if (err.name === 'AbortError') {
-          // User cancelled the share, just close menu
+          // User cancelled the share, do nothing
           console.log('User cancelled share');
-          setShowShareMenu(false);
           return;
         }
         console.log('Web Share API failed:', err);
       }
     }
     
-    // Fallback: Download the video and provide instructions
-    // URL schemes cannot share files, only open apps
-    console.log('Fallback: Downloading video for manual sharing');
+    // Fallback: Download the video if Web Share doesn't work
+    console.log('Fallback: Downloading video');
     handleSave();
-    
-    const platformNames: Record<typeof platform, string> = {
-      instagram: 'Instagram',
-      facebook: 'Facebook',
-      whatsapp: 'WhatsApp',
-      telegram: 'Telegram',
-      upscrolled: 'Upscrolled'
-    };
-    
-    const instructions: Record<typeof platform, string> = {
-      instagram: 'Video downloaded!\n\n1. Open Instagram app\n2. Create a new Post or Story\n3. Select the downloaded video\n4. Add caption and share!',
-      facebook: 'Video downloaded!\n\n1. Open Facebook app\n2. Create a new Post\n3. Tap "Photo/Video"\n4. Select the downloaded video\n5. Add caption and share!',
-      whatsapp: 'Video downloaded!\n\n1. Open WhatsApp\n2. Select a chat\n3. Tap the attachment icon (📎)\n4. Choose "Gallery" or "Photos"\n5. Select the downloaded video\n6. Send!',
-      telegram: 'Video downloaded!\n\n1. Open Telegram\n2. Select a chat\n3. Tap the attachment icon (📎)\n4. Choose "Gallery" or "Photos"\n5. Select the downloaded video\n6. Send!',
-      upscrolled: 'Video downloaded!\n\n1. Open Upscrolled app\n2. Create a new post\n3. Select the downloaded video\n4. Add caption and share!'
-    };
-    
-    alert(instructions[platform]);
-    
-    // Try to open the app (will only open the app, won't attach the video)
-    const appUrls: Record<typeof platform, string> = {
-      instagram: 'instagram://',
-      facebook: 'fb://',
-      whatsapp: 'whatsapp://',
-      telegram: 'tg://',
-      upscrolled: 'upscrolled://'
-    };
-    
-    const webUrls: Record<typeof platform, string> = {
-      instagram: 'https://www.instagram.com/',
-      facebook: 'https://www.facebook.com/',
-      whatsapp: 'https://web.whatsapp.com/',
-      telegram: 'https://web.telegram.org/',
-      upscrolled: 'https://upscrolled.com/'
-    };
-    
-    // Try to open the native app
-    try {
-      window.location.href = appUrls[platform];
-      
-      // Fallback to web if app doesn't open
-      setTimeout(() => {
-        window.open(webUrls[platform], '_blank');
-      }, 2000);
-    } catch (err) {
-      // If that fails, just open the web version
-      window.open(webUrls[platform], '_blank');
-    }
-    
-    setShowShareMenu(false);
+    alert('Video downloaded! You can now share it from your gallery.');
   };
 
   const handleDelete = () => {
@@ -704,15 +656,11 @@ export function VideoRecorder({
             />
           </div>
           <div className="flex gap-4 p-6 bg-slate-900">
-            <button onClick={handleSave} className="flex-1 bg-blue-600 text-white py-4 rounded-xl flex items-center justify-center gap-2">
-              <Download className="w-5 h-5" />
-              <span>Save</span>
-            </button>
-            <button onClick={() => setShowShareMenu(!showShareMenu)} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl flex items-center justify-center gap-2">
+            <button onClick={handleShare} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform">
               <Share2 className="w-5 h-5" />
               <span>Share</span>
             </button>
-            <button onClick={handleDelete} className="flex-1 bg-red-600 text-white py-4 rounded-xl flex items-center justify-center gap-2">
+            <button onClick={handleDelete} className="flex-1 bg-red-600 text-white py-4 rounded-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform">
               <Trash2 className="w-5 h-5" />
               <span>Delete</span>
             </button>
@@ -778,6 +726,7 @@ export function VideoRecorder({
               playsInline
               muted
               className="w-full h-full object-cover"
+              style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
             />
             
             {/* Loading overlay */}
