@@ -712,7 +712,7 @@ export function VideoRecorder({
             
             {/* Record button - ALWAYS ON TOP */}
             {recordingState === 'setup' && cameraReady && (
-              <div className="absolute inset-0 flex items-center justify-center z-[150] pointer-events-none">
+              <div className="fixed inset-0 flex items-center justify-center z-[9999] pointer-events-none">
                 <div className="pointer-events-auto">
                   <button
                     onClick={startRecording}
@@ -728,20 +728,19 @@ export function VideoRecorder({
               </div>
             )}
 
-            {/* Countdown */}
+            {/* Countdown - ALWAYS VISIBLE */}
             {recordingState === 'recording' && (
-              <div className="absolute inset-0 flex items-center justify-center z-[100]">
-                <div className="bg-black/70 px-8 py-4 rounded-2xl">
-                  <p className="text-red-500 text-6xl font-bold font-mono tabular-nums">{countdown}</p>
-                  <p className="text-white/70 text-center text-sm mt-2">Recording...</p>
+              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999]">
+                <div className="bg-black/80 px-6 py-3 rounded-2xl border-2 border-red-500">
+                  <p className="text-red-500 text-4xl font-bold font-mono tabular-nums">{countdown}</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Stop button */}
+          {/* Stop button - FAR RIGHT */}
           {recordingState === 'recording' && (
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex items-center justify-center z-50">
+            <div className="fixed right-4 top-1/2 -translate-y-1/2 z-[9999]">
               <button
                 onClick={stopRecording}
                 className="w-20 h-20 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center shadow-2xl"
