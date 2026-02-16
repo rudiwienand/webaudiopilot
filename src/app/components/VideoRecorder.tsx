@@ -95,6 +95,8 @@ export function VideoRecorder({
     setCameraError(null);
     setCameraReady(false);
     
+    console.log('🎥 Initializing camera with facingMode:', facingMode);
+    
     try {
       if (!navigator.mediaDevices) {
         setCameraError('Camera not supported');
@@ -104,8 +106,8 @@ export function VideoRecorder({
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 720 },  // Reduced from 1280 for faster loading
+          height: { ideal: 1280 }
         },
         audio: false
       });
@@ -118,7 +120,10 @@ export function VideoRecorder({
           videoRef.current?.play()
             .then(() => {
               console.log('✅ Camera preview playing');
-              setCameraReady(true);
+              // Small delay to ensure video is fully rendered
+              setTimeout(() => {
+                setCameraReady(true);
+              }, 200);
             })
             .catch(err => console.error('Play error:', err));
         };
@@ -689,18 +694,26 @@ export function VideoRecorder({
             
             {/* Loading overlay */}
             {!cameraReady && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-black z-[50]">
                 <div className="text-white text-center">
-                  <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p>Loading camera...</p>
+                  <div 
+                    className="w-20 h-20 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-6"
+                    style={{ borderColor: `${chakraColor}60 transparent ${chakraColor}60 transparent` }}
+                  ></div>
+                  <p className="text-xl font-semibold mb-2" style={{ color: chakraColor }}>
+                    Loading Camera...
+                  </p>
+                  <p className="text-white/60 text-sm">
+                    Please wait while we initialize your camera
+                  </p>
                 </div>
               </div>
             )}
             
-            {/* Record button */}
+            {/* Record button - ALWAYS ON TOP */}
             {recordingState === 'setup' && cameraReady && (
-              <div className="absolute inset-0 flex items-center justify-center z-[100]">
-                <div>
+              <div className="absolute inset-0 flex items-center justify-center z-[150] pointer-events-none">
+                <div className="pointer-events-auto">
                   <button
                     onClick={startRecording}
                     className="w-24 h-24 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-2xl transition-all hover:scale-110"
