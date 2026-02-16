@@ -752,34 +752,24 @@ export function VideoRecorder({
             </div>
           )}
 
-          {/* Chakra controller - bottom half - HIDDEN VISUALLY but kept in DOM for canvas capture */}
-          <div 
-            className="absolute bottom-0 left-0 right-0 bg-slate-900"
-            style={{ 
-              height: '0px',  // Collapse to zero height
-              overflow: 'hidden',
-              visibility: 'hidden',
-              pointerEvents: 'none'
-            }}
-          >
-            <div data-video-recorder-mandala="true">
-              <MandalaController
-                tracks={safeTracks}
-                onVolumeChange={onVolumeChange}
-                chakraColor={chakraColor}
-                controllerPosition={controllerPosition}
-                onControllerMove={onControllerMove}
-                isAutoMixing={isAutoMixing}
-              />
+          {/* Chakra controller - bottom half */}
+          <div className="flex-1 bg-slate-900 flex items-center justify-center overflow-hidden p-4">
+            <div className="w-full h-full max-w-md max-h-full flex items-center justify-center">
+              <div data-video-recorder-mandala="true">
+                <MandalaController
+                  tracks={safeTracks}
+                  onVolumeChange={onVolumeChange}
+                  chakraColor={chakraColor}
+                  controllerPosition={controllerPosition}
+                  onControllerMove={onControllerMove}
+                  isAutoMixing={isAutoMixing}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Canvas overlay - shows the complete composite (camera + mandala) */}
-          <canvas 
-            ref={canvasRef} 
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            style={{ objectFit: 'contain', zIndex: 10 }}
-          />
+          {/* Hidden canvas */}
+          <canvas ref={canvasRef} className="hidden" />
         </div>
       )}
     </div>
