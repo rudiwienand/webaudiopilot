@@ -1,9 +1,7 @@
-import { TrackFader } from "./TrackFader";
+import { Play, Pause, Sparkles } from "lucide-react";
 import { MandalaController } from "./MandalaController";
-import { Play, Pause, Sparkles, Video } from "lucide-react";
-import { useState } from "react";
-import { VideoRecorder } from "./VideoRecorder";
 
+// MixerPanel - Main chakra mixing interface
 interface Track {
   id: number;
   name: string;
@@ -56,18 +54,9 @@ export function MixerPanel({
   audioContext,
   masterGainNode
 }: MixerPanelProps) {
-  const [showVideoRecorder, setShowVideoRecorder] = useState(false);
-  
   const trackNames = [
     "Ambient Pad",
-    "Singing Bowl",
-    "Nature Sounds",
-    "Binaural Beat",
-    "Chimes",
-    "Drone",
-    "Rain",
-    "Wind",
-    "Ocean Waves"
+    "Singing Bowl"
   ];
 
   return (
@@ -202,47 +191,6 @@ export function MixerPanel({
         onControllerMove={onControllerMove}
         isAutoMixing={isAutoMixing}
       />
-
-      {/* Video Record Button - Works on Desktop & Mobile */}
-      <div className="mt-6 flex justify-center">
-        <button
-          onClick={() => setShowVideoRecorder(true)}
-          disabled={isLoadingTracks}
-          className={`px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg ${isLoadingTracks ? 'opacity-50 cursor-not-allowed' : ''}`}
-          style={{ boxShadow: `0 0 20px ${chakraColor}60` }}
-        >
-          <Video className="w-5 h-5" />
-          <span>🎥 Record Video (50s)</span>
-        </button>
-      </div>
-
-      {/* Video Recorder Modal */}
-      {showVideoRecorder && (
-        <VideoRecorder
-          chakraColor={chakraColor}
-          audioContext={audioContext || null}
-          masterGainNode={masterGainNode || null}
-          onClose={() => setShowVideoRecorder(false)}
-          onStartPlayback={() => {
-            // Auto-start playback when recording starts
-            if (!isChakraPlaying) {
-              onToggleChakraPlay();
-            }
-          }}
-          onStopPlayback={() => {
-            // Stop playback when recording stops
-            if (isChakraPlaying) {
-              onToggleChakraPlay();
-            }
-          }}
-          isChakraPlaying={isChakraPlaying}
-          tracks={tracks}
-          onVolumeChange={onVolumeChange}
-          controllerPosition={controllerPosition}
-          onControllerMove={onControllerMove}
-          isAutoMixing={isAutoMixing}
-        />
-      )}
     </div>
   );
 }
