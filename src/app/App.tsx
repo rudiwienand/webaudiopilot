@@ -296,8 +296,42 @@ export default function App() {
     );
   }, [selectedChakra]);
 
-  const handleStartAutoMix = () => {
+  const handleStartAutoMix = (durationInSeconds: number) => {
     const chakraId = selectedChakra;
+
+    // If duration is 0, stop auto-mix
+    if (durationInSeconds === 0) {
+      const interval =
+        autoMixIntervalsRef.current.get(chakraId);
+      if (interval) clearInterval(interval);
+      autoMixIntervalsRef.current.delete(chakraId);
+
+      // Stop auto-mix and reset position to top of outer circle
+      setChakras((prev) =>
+        prev.map((chakra) =>
+          chakra.id === chakraId
+            ? {
+                ...chakra,
+                isAutoMixing: false,
+                isPlaying: false,
+                tracks: chakra.tracks.map((track) => ({
+                  ...track,
+                  volume: 0,
+                  isPlaying: true,
+                })),
+              }
+            : chakra,
+        ),
+      );
+
+      // Reset controller to top of outer circle
+      setControllerPositions((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(chakraId, getDefaultControllerPosition());
+        return newMap;
+      });
+      return;
+    }
 
     // Stop auto-mix if already running
     if (autoMixIntervalsRef.current.has(chakraId)) {
@@ -365,9 +399,21 @@ export default function App() {
 
     // Smooth random movement parameters
     const startTime = Date.now();
-    const duration = 15 * 60 * 1000; // 15 minutes
-    const initialMoveDuration = 45000; // 45 seconds to move inward - ultra slow, deeply meditative fade-in
-    const finalMoveDuration = 10000; // 10 seconds to move outward
+    const duration = durationInSeconds * 1000; // Convert to milliseconds
+    
+    // Scale phase durations proportionally to total duration
+    // Use percentages: fade-in = 5%, fade-out = 1.11%, middle = 93.89%
+    const fadeInPercentage = 0.05; // 5% for fade-in
+    const fadeOutPercentage = 0.0111; // 1.11% for fade-out (10s / 15min = 900s)
+    
+    const initialMoveDuration = duration * fadeInPercentage; // 5% of total time for fade-in
+    const finalMoveDuration = duration * fadeOutPercentage; // 1.11% of total time for fade-out
+    const constraintStartTime = 15000; // Start constraints after 15 seconds (fixed)
+
+    // Movement constraint: third concentric circle from outside (innerRadius * 0.7)
+    // In canvas: innerRadius = size * 0.38, third circle = size * 0.38 * 0.7 = size * 0.266
+    // In normalized coords (where center is 0.5): maxRadius = 0.266
+    const maxAllowedRadius = 0.266; // Radius from center (0.5, 0.5) in normalized coordinates
 
     // Perlin-noise-like smooth random walk using multiple sine waves
     let currentX = initialX;
@@ -376,9 +422,9 @@ export default function App() {
     // Multiple sine wave frequencies for organic, never-stopping movement
     // MUCH SLOWER frequencies for deeply meditative, gentle drift
     // Add random variation to base frequencies for unique movement each time
-    const freqVariation1 = 0.7 + Math.random() * 0.6; // 0.7 to 1.3 multiplier
-    const freqVariation2 = 0.7 + Math.random() * 0.6;
-    const freqVariation3 = 0.7 + Math.random() * 0.6;
+    const freqVariation1 = 0.95 + Math.random() * 0.10; // 0.95 to 1.05 multiplier (minimal variation)
+    const freqVariation2 = 0.95 + Math.random() * 0.10; // 0.95 to 1.05 multiplier (minimal variation)
+    const freqVariation3 = 0.95 + Math.random() * 0.10; // 0.95 to 1.05 multiplier (minimal variation)
 
     const freq1 = 0.00008 * freqVariation1; // Ultra slow base frequency with variation
     const freq2 = 0.00015 * freqVariation2; // Slow medium frequency with variation
@@ -417,7 +463,7 @@ export default function App() {
     const randomExitAngle = Math.random() * Math.PI * 2; // Any angle 0 to 360 degrees
 
     console.log(
-      `Auto-mix started: 45sec fade-in → ultra-slow meditative drift → 10sec fade-out`,
+      `Auto-mix started: ${(initialMoveDuration/1000).toFixed(1)}sec fade-in → ultra-slow meditative drift → ${(finalMoveDuration/1000).toFixed(1)}sec fade-out (Total: ${(durationInSeconds/60).toFixed(1)} min)`,
     );
 
     // Animation loop - update controller position smoothly
@@ -464,11 +510,23 @@ export default function App() {
 
         const angle =
           randomStartAngle + spiralRotation * easedProgress; // Spiral inward
-        const targetX = 0.5 + Math.cos(angle) * currentRadius;
-        const targetY = 0.5 + Math.sin(angle) * currentRadius;
+        let targetX = 0.5 + Math.cos(angle) * currentRadius;
+        let targetY = 0.5 + Math.sin(angle) * currentRadius;
+
+        // Apply constraint after 15 seconds (even during fade-in)
+        if (elapsed > constraintStartTime) {
+          const targetRadius = Math.sqrt(
+            (targetX - 0.5) ** 2 + (targetY - 0.5) ** 2,
+          );
+          if (targetRadius > maxAllowedRadius) {
+            const constrainedAngle = Math.atan2(targetY - 0.5, targetX - 0.5);
+            targetX = 0.5 + Math.cos(constrainedAngle) * maxAllowedRadius;
+            targetY = 0.5 + Math.sin(constrainedAngle) * maxAllowedRadius;
+          }
+        }
 
         // Ultra gentle interpolation for extremely slow, peaceful fade-in
-        const smoothing = 0.006; // Ultra slow drift like a feather (was 0.03)
+        const smoothing = 0.003072; // Reduced by another 20% for ultra-slow movement
         currentX += (targetX - currentX) * smoothing;
         currentY += (targetY - currentY) * smoothing;
       }
@@ -511,7 +569,7 @@ export default function App() {
         const targetY = 0.5 + Math.sin(newAngle) * newRadius;
 
         // Very smooth interpolation for gradual fade-out
-        const smoothing = 0.08;
+        const smoothing = 0.032768; // Reduced by another 20% for ultra-slow fade-out
         currentX += (targetX - currentX) * smoothing;
         currentY += (targetY - currentY) * smoothing;
       }
@@ -534,13 +592,25 @@ export default function App() {
         const normX = noiseX / maxAmplitudeX;
         const normY = noiseY / maxAmplitudeY;
 
-        // Scale to movement range (stay within inner zone for good volume levels)
-        const movementRadius = baseMovementRadius; // Maximum distance from center
-        const targetX = 0.5 + normX * movementRadius;
-        const targetY = 0.5 + normY * movementRadius;
+        // Scale to movement range and apply constraint BEFORE smoothing
+        let targetX = 0.5 + normX * baseMovementRadius;
+        let targetY = 0.5 + normY * baseMovementRadius;
 
-        // Ultra smooth interpolation for deeply meditative, slow but constant movement
-        const smoothing = 0.008; // Very slow, ultra-soft, deeply meditative drift (was 0.015)
+        // Apply movement constraints after 15 seconds
+        if (elapsed > constraintStartTime) {
+          const targetRadius = Math.sqrt(
+            (targetX - 0.5) ** 2 + (targetY - 0.5) ** 2,
+          );
+          if (targetRadius > maxAllowedRadius) {
+            // Smoothly constrain to the boundary instead of hard clipping
+            const angle = Math.atan2(targetY - 0.5, targetX - 0.5);
+            targetX = 0.5 + Math.cos(angle) * maxAllowedRadius;
+            targetY = 0.5 + Math.sin(angle) * maxAllowedRadius;
+          }
+        }
+
+        // Smoother interpolation for constant, fluid movement without stopping
+        const smoothing = 0.00768; // Reduced by another 20% for ultra-slow movement
         currentX += (targetX - currentX) * smoothing;
         currentY += (targetY - currentY) * smoothing;
       }
@@ -899,14 +969,14 @@ export default function App() {
 
             {selectedChakra === 6 && (
               /* Third Eye Chakra */
-              <div className="bg-gradient-to-br from-indigo-900/20 to-indigo-800/10 border border-indigo-500/30 rounded-xl p-6 text-left">
-                <h3 className="text-indigo-400 font-semibold text-lg mb-3 flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-indigo-500"></span>
+              <div className="bg-gradient-to-br from-orange-900/20 to-orange-800/10 border border-orange-500/30 rounded-xl p-6 text-left">
+                <h3 className="text-orange-400 font-semibold text-lg mb-3 flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-orange-500"></span>
                   Third Eye Chakra (Ajna)
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-white/70 text-sm">
                   <div>
-                    <p className="text-indigo-300/80 font-medium mb-1">
+                    <p className="text-orange-300/80 font-medium mb-1">
                       Cosmic Properties:
                     </p>
                     <ul className="space-y-1 ml-4">
@@ -919,7 +989,7 @@ export default function App() {
                     </ul>
                   </div>
                   <div>
-                    <p className="text-indigo-300/80 font-medium mb-1">
+                    <p className="text-orange-300/80 font-medium mb-1">
                       Physical:
                     </p>
                     <ul className="space-y-1 ml-4">
@@ -928,7 +998,7 @@ export default function App() {
                     </ul>
                   </div>
                   <div>
-                    <p className="text-indigo-300/80 font-medium mb-1">
+                    <p className="text-orange-300/80 font-medium mb-1">
                       Psychological:
                     </p>
                     <ul className="space-y-1 ml-4">
@@ -939,7 +1009,7 @@ export default function App() {
                     </ul>
                   </div>
                   <div>
-                    <p className="text-indigo-300/80 font-medium mb-1">
+                    <p className="text-orange-300/80 font-medium mb-1">
                       Spiritual:
                     </p>
                     <ul className="space-y-1 ml-4">
@@ -979,7 +1049,7 @@ export default function App() {
                     </p>
                     <ul className="space-y-1 ml-4">
                       <li>• Natural painkiller</li>
-                      <li>• Calming on nervous system</li>
+                      <li> Calming on nervous system</li>
                     </ul>
                   </div>
                   <div>

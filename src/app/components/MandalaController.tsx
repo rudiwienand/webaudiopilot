@@ -11,6 +11,7 @@ interface MandalaControllerProps {
   tracks: Track[];
   onVolumeChange: (trackId: number, volume: number) => void;
   chakraColor: string;
+  chakraId?: number;
   controllerPosition?: { x: number; y: number };
   onControllerMove?: (x: number, y: number) => void;
   isAutoMixing: boolean;
@@ -20,6 +21,7 @@ export function MandalaController({
   tracks,
   onVolumeChange,
   chakraColor,
+  chakraId,
   controllerPosition,
   onControllerMove,
   isAutoMixing
@@ -42,6 +44,188 @@ export function MandalaController({
   const outerRadius = size * 0.45; // Outer boundary circle
   const innerRadius = size * 0.38; // Inner active zone
   const starRadius = innerRadius * 0.85; // Star points radius
+
+  // Function to draw chakra symbol at controller position
+  const drawChakraSymbol = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, id?: number) => {
+    ctx.save();
+    ctx.translate(x, y);
+    
+    const symbolSize = size;
+    const chakraId = id || 1;
+
+    // Draw colored background circle
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, 0, symbolSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw white outline circle
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, symbolSize, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Draw chakra-specific symbol in white
+    ctx.strokeStyle = 'white';
+    ctx.fillStyle = 'white';
+    ctx.lineWidth = 2;
+
+    switch(chakraId) {
+      case 1: // Root - 4 petals with square
+        // 4 petals
+        [-90, 0, 90, 180].forEach(angle => {
+          const rad = angle * Math.PI / 180;
+          const px = Math.cos(rad) * symbolSize * 0.6;
+          const py = Math.sin(rad) * symbolSize * 0.6;
+          ctx.beginPath();
+          ctx.arc(px, py, symbolSize * 0.3, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+        // Center square
+        const squareSize = symbolSize * 0.5;
+        ctx.strokeRect(-squareSize/2, -squareSize/2, squareSize, squareSize);
+        break;
+
+      case 2: // Sacral - 6 petals with crescent
+        // 6 petals
+        for (let i = 0; i < 6; i++) {
+          const angle = (i * 60 - 90) * Math.PI / 180;
+          const px = Math.cos(angle) * symbolSize * 0.6;
+          const py = Math.sin(angle) * symbolSize * 0.6;
+          ctx.beginPath();
+          ctx.arc(px, py, symbolSize * 0.25, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Crescent moon
+        ctx.beginPath();
+        ctx.arc(0, 0, symbolSize * 0.4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(symbolSize * 0.1, 0, symbolSize * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        break;
+
+      case 3: // Solar Plexus - 10 petals with triangle
+        // 10 petals
+        for (let i = 0; i < 10; i++) {
+          const angle = (i * 36 - 90) * Math.PI / 180;
+          const px = Math.cos(angle) * symbolSize * 0.65;
+          const py = Math.sin(angle) * symbolSize * 0.65;
+          ctx.beginPath();
+          ctx.arc(px, py, symbolSize * 0.2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Downward triangle
+        ctx.beginPath();
+        ctx.moveTo(0, -symbolSize * 0.3);
+        ctx.lineTo(symbolSize * 0.3, symbolSize * 0.2);
+        ctx.lineTo(-symbolSize * 0.3, symbolSize * 0.2);
+        ctx.closePath();
+        ctx.stroke();
+        break;
+
+      case 4: // Heart - 12 petals with Star of David
+        // 12 petals
+        for (let i = 0; i < 12; i++) {
+          const angle = (i * 30 - 90) * Math.PI / 180;
+          const px = Math.cos(angle) * symbolSize * 0.65;
+          const py = Math.sin(angle) * symbolSize * 0.65;
+          ctx.beginPath();
+          ctx.arc(px, py, symbolSize * 0.18, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Star of David - upward triangle
+        ctx.beginPath();
+        ctx.moveTo(0, -symbolSize * 0.3);
+        ctx.lineTo(symbolSize * 0.3, symbolSize * 0.2);
+        ctx.lineTo(-symbolSize * 0.3, symbolSize * 0.2);
+        ctx.closePath();
+        ctx.stroke();
+        // Downward triangle
+        ctx.beginPath();
+        ctx.moveTo(0, symbolSize * 0.3);
+        ctx.lineTo(symbolSize * 0.3, -symbolSize * 0.2);
+        ctx.lineTo(-symbolSize * 0.3, -symbolSize * 0.2);
+        ctx.closePath();
+        ctx.stroke();
+        break;
+
+      case 5: // Throat - 16 petals with circle
+        // 16 petals
+        for (let i = 0; i < 16; i++) {
+          const angle = (i * 22.5 - 90) * Math.PI / 180;
+          const px = Math.cos(angle) * symbolSize * 0.7;
+          const py = Math.sin(angle) * symbolSize * 0.7;
+          ctx.beginPath();
+          ctx.arc(px, py, symbolSize * 0.15, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Inner circle with triangle
+        ctx.beginPath();
+        ctx.arc(0, 0, symbolSize * 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -symbolSize * 0.2);
+        ctx.lineTo(symbolSize * 0.15, symbolSize * 0.1);
+        ctx.lineTo(-symbolSize * 0.15, symbolSize * 0.1);
+        ctx.closePath();
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        break;
+
+      case 6: // Third Eye - 2 petals with Om
+        // 2 large petals
+        ctx.beginPath();
+        ctx.arc(-symbolSize * 0.5, 0, symbolSize * 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(symbolSize * 0.5, 0, symbolSize * 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+        // Om symbol simplified - circle
+        ctx.beginPath();
+        ctx.arc(0, 0, symbolSize * 0.4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, -symbolSize * 0.1, symbolSize * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+
+      case 7: // Crown - 1000 petals (simplified concentric)
+        // Outer ring of petals
+        for (let i = 0; i < 12; i++) {
+          const angle = (i * 30 - 90) * Math.PI / 180;
+          const px = Math.cos(angle) * symbolSize * 0.7;
+          const py = Math.sin(angle) * symbolSize * 0.7;
+          ctx.beginPath();
+          ctx.arc(px, py, symbolSize * 0.13, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Middle ring
+        for (let i = 0; i < 8; i++) {
+          const angle = (i * 45 - 90) * Math.PI / 180;
+          const px = Math.cos(angle) * symbolSize * 0.45;
+          const py = Math.sin(angle) * symbolSize * 0.45;
+          ctx.beginPath();
+          ctx.arc(px, py, symbolSize * 0.1, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Center lotus
+        ctx.beginPath();
+        ctx.arc(0, 0, symbolSize * 0.25, 0, Math.PI * 2);
+        ctx.stroke();
+        break;
+
+      default:
+        // Default - simple circle
+        ctx.beginPath();
+        ctx.arc(0, 0, symbolSize * 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+  };
 
   // Use external position if provided (for auto-mix), otherwise use local
   const currentPos = controllerPosition || localControllerPos;
@@ -240,7 +424,7 @@ export function MandalaController({
     });
 
     // 2. Metatron's Cube - connect all points to all other points
-    ctx.strokeStyle = `${chakraColor}20`;
+    ctx.strokeStyle = `${chakraColor}13`; // Reduced by 40% (was 20)
     ctx.lineWidth = 1;
     starPoints.forEach((point1, i) => {
       starPoints.forEach((point2, j) => {
@@ -296,7 +480,7 @@ export function MandalaController({
     ctx.stroke();
 
     // 5. Connect inner star to outer star
-    ctx.strokeStyle = `${chakraColor}15`;
+    ctx.strokeStyle = `${chakraColor}0D`; // Reduced by 40% (was 15)
     ctx.lineWidth = 0.5;
     innerStarPoints.forEach((innerPoint, i) => {
       const outerPoint = starPoints[i];
@@ -321,7 +505,7 @@ export function MandalaController({
     ctx.stroke();
 
     // ALWAYS connect all star points to each other (permanent connections)
-    ctx.strokeStyle = `${chakraColor}25`; // Reduced from 50 to 25
+    ctx.strokeStyle = `${chakraColor}16`; // Reduced by 40% (was 25)
     ctx.lineWidth = 1;
     starPoints.forEach((point1, i) => {
       starPoints.forEach((point2, j) => {
@@ -335,7 +519,7 @@ export function MandalaController({
     });
 
     // Draw star inner connections (sacred geometry) - secondary pattern
-    ctx.strokeStyle = `${chakraColor}20`; // Reduced from 30 to 20
+    ctx.strokeStyle = `${chakraColor}13`; // Reduced by 40% (was 20)
     ctx.lineWidth = 0.8;
     starPoints.forEach((point, i) => {
       const nextPoint = starPoints[(i + 3) % 9]; // Connect every 3rd point
@@ -347,58 +531,106 @@ export function MandalaController({
 
     // Draw track points and labels
     const volumes = calculateVolumes();
+    
+    // Calculate controller position first for distance calculations
+    const controllerX = centerX + (currentPos.x - 0.5) * outerRadius * 2;
+    const controllerY = centerY + (currentPos.y - 0.5) * outerRadius * 2;
+    
+    // Calculate distance from center for global size boost
+    const controllerDistanceFromCenter = Math.sqrt(
+      Math.pow(controllerX - centerX, 2) + Math.pow(controllerY - centerY, 2)
+    );
+    const innermostCircleRadius = innerRadius * 0.3; // The innermost concentric circle
+    
+    // Calculate global size boost when cursor is inside innermost circle
+    let globalSizeBoost = 0;
+    if (controllerDistanceFromCenter < innermostCircleRadius) {
+      // 0 at innermost circle edge, 1 at center
+      globalSizeBoost = 1 - (controllerDistanceFromCenter / innermostCircleRadius);
+    }
+    
+    // Calculate distances from controller to all points for proximity-based sizing
+    const pointDistances = starPoints.map(point => {
+      const dx = controllerX - point.x;
+      const dy = controllerY - point.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    });
+    const maxDistance = Math.max(...pointDistances);
+    
     starPoints.forEach((point, i) => {
       const volume = volumes[i].volume;
       const intensity = volume / 100;
+      
+      // Calculate proximity factor (0 = furthest, 1 = closest)
+      const distance = pointDistances[i];
+      const proximityFactor = 1 - (distance / maxDistance);
+      
+      // Size interpolation: 60% (far) to 100% (close) of base size, up to cursor size (30px) when very close
+      const baseSize = 8;
+      const minSize = baseSize * 0.6; // 60% of actual size
+      const maxSize = 30; // Same as cursor size
+      let pointSize = minSize + (maxSize - minSize) * proximityFactor;
+      
+      // Apply global size boost when cursor is in center area
+      // This pushes all dots towards max size
+      pointSize = pointSize + (maxSize - pointSize) * globalSizeBoost;
+      
+      // Brightness interpolation: -30% (far) to +50% (close)
+      const baseBrightness = 100;
+      const minBrightness = baseBrightness * 0.7; // 30% less
+      const maxBrightness = baseBrightness * 1.5; // 50% more
+      const brightness = minBrightness + (maxBrightness - minBrightness) * proximityFactor;
+      
+      // Glow size based on proximity
+      const glowSize = 20 + proximityFactor * 30; // 20px to 50px glow radius
+      
+      // Draw halo glow (strongest when close)
+      if (proximityFactor > 0.3) {
+        const haloGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, glowSize * 1.5);
+        haloGradient.addColorStop(0, `${chakraColor}${Math.round(Math.min(255, proximityFactor * 120)).toString(16).padStart(2, '0')}`);
+        haloGradient.addColorStop(0.5, `${chakraColor}${Math.round(Math.min(255, proximityFactor * 60)).toString(16).padStart(2, '0')}`);
+        haloGradient.addColorStop(1, `${chakraColor}00`);
+        
+        ctx.fillStyle = haloGradient;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, glowSize * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Draw point with volume-based glow
-      const pointGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, 20);
-      pointGradient.addColorStop(0, `${chakraColor}${Math.round(intensity * 255).toString(16).padStart(2, '0')}`);
+      const pointGradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, glowSize);
+      const glowOpacity = Math.round(Math.min(255, intensity * brightness * 2.55));
+      pointGradient.addColorStop(0, `${chakraColor}${glowOpacity.toString(16).padStart(2, '0')}`);
       pointGradient.addColorStop(1, `${chakraColor}00`);
       
       ctx.fillStyle = pointGradient;
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 20, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, glowSize, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw point circle
+      // Draw point circle with dynamic size and brightness
       ctx.strokeStyle = chakraColor;
-      ctx.fillStyle = `${chakraColor}${Math.round(intensity * 100 + 50).toString(16).padStart(2, '0')}`;
-      ctx.lineWidth = 2;
+      const fillOpacity = Math.round(Math.min(255, (intensity * 100 + 50) * (brightness / 100)));
+      ctx.fillStyle = `${chakraColor}${fillOpacity.toString(16).padStart(2, '0')}`;
+      ctx.lineWidth = 2 + proximityFactor * 2; // Thicker stroke when close
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, pointSize, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     });
 
     // Draw controller point
-    const controllerX = centerX + (currentPos.x - 0.5) * outerRadius * 2;
-    const controllerY = centerY + (currentPos.y - 0.5) * outerRadius * 2;
-
     // Controller glow
     const controllerGradient = ctx.createRadialGradient(
       controllerX, controllerY, 0,
-      controllerX, controllerY, 30
+      controllerX, controllerY, 40
     );
     controllerGradient.addColorStop(0, `${chakraColor}80`);
     controllerGradient.addColorStop(1, `${chakraColor}00`);
     
     ctx.fillStyle = controllerGradient;
     ctx.beginPath();
-    ctx.arc(controllerX, controllerY, 30, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Controller outer ring
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(controllerX, controllerY, 15, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Controller inner circle
-    ctx.fillStyle = chakraColor;
-    ctx.beginPath();
-    ctx.arc(controllerX, controllerY, 10, 0, Math.PI * 2);
+    ctx.arc(controllerX, controllerY, 40, 0, Math.PI * 2);
     ctx.fill();
 
     // Draw lines from controller to each star point (ALWAYS VISIBLE WITH GLOW)
@@ -445,6 +677,9 @@ export function MandalaController({
         ctx.stroke();
       }
     });
+
+    // Draw chakra symbol at controller position
+    drawChakraSymbol(ctx, controllerX, controllerY, 30, chakraColor, chakraId);
 
   }, [currentPos, chakraColor, tracks]);
 

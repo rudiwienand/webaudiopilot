@@ -1,5 +1,6 @@
 import { Play, Pause, Sparkles } from "lucide-react";
 import { MandalaController } from "./MandalaController";
+import { useState } from "react";
 
 // MixerPanel - Main chakra mixing interface
 interface Track {
@@ -20,7 +21,7 @@ interface MixerPanelProps {
   onToggleChakraPlay: () => void;
   frequency: string;
   description: string;
-  onStartAutoMix: () => void;
+  onStartAutoMix: (duration: number) => void;
   isAutoMixing: boolean;
   isInitialized: boolean;
   loadingProgress: number;
@@ -54,10 +55,32 @@ export function MixerPanel({
   audioContext,
   masterGainNode
 }: MixerPanelProps) {
+  const [showTimerSelection, setShowTimerSelection] = useState(false);
+  const [selectedMinutes, setSelectedMinutes] = useState(15);
+
   const trackNames = [
     "Ambient Pad",
     "Singing Bowl"
   ];
+
+  const handleAutoPilotClick = () => {
+    if (isAutoMixing) {
+      // If already running, stop it
+      onStartAutoMix(0);
+    } else {
+      // Show timer selection
+      setShowTimerSelection(true);
+    }
+  };
+
+  const handleStartWithDuration = () => {
+    setShowTimerSelection(false);
+    onStartAutoMix(selectedMinutes * 60); // Convert to seconds
+  };
+
+  const handleCancelTimer = () => {
+    setShowTimerSelection(false);
+  };
 
   return (
     <div className="w-full bg-slate-900/50 backdrop-blur-sm rounded-2xl p-3 md:p-6">
@@ -155,14 +178,19 @@ export function MixerPanel({
               )}
             </button>
             <h2 className="text-white/90 mb-2">{chakraName}</h2>
-            <p className="text-white/50 text-sm">{frequency} - {description}</p>
+            <p 
+              className="text-sm"
+              style={{ color: chakraId === 6 ? chakraColor : 'rgba(255, 255, 255, 0.5)' }}
+            >
+              {frequency} - {description}
+            </p>
           </div>
         </div>
 
         {/* Auto Mix Button */}
         <div className="flex flex-col items-center gap-2 mb-4">
           <button
-            onClick={onStartAutoMix}
+            onClick={handleAutoPilotClick}
             disabled={isLoadingTracks}
             className={`
               px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2
@@ -177,20 +205,82 @@ export function MixerPanel({
             }}
           >
             <Sparkles className={`w-5 h-5 ${isAutoMixing ? 'animate-pulse' : ''}`} />
-            <span>{isAutoMixing ? 'Stop Auto Pilot' : 'Start 15-Min Auto Pilot'}</span>
+            <span>{isAutoMixing ? 'Stop Auto Pilot' : 'Start Auto Pilot'}</span>
           </button>
         </div>
       </div>
 
       {/* Mandala Controller - Sacred Geometry Mixer */}
-      <MandalaController
-        tracks={tracks}
-        onVolumeChange={onVolumeChange}
-        chakraColor={chakraColor}
-        controllerPosition={controllerPosition}
-        onControllerMove={onControllerMove}
-        isAutoMixing={isAutoMixing}
-      />
+      <div className="relative">
+        <MandalaController
+          tracks={tracks}
+          onVolumeChange={onVolumeChange}
+          chakraColor={chakraColor}
+          chakraId={chakraId}
+          controllerPosition={controllerPosition}
+          onControllerMove={onControllerMove}
+          isAutoMixing={isAutoMixing}
+        />
+
+        {/* Timer Selection Overlay */}
+        {showTimerSelection && (
+          <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm rounded-2xl">
+            <div className="bg-slate-800/95 p-8 rounded-2xl shadow-2xl border-2" style={{ borderColor: chakraColor }}>
+              <h3 className="text-white/90 text-xl font-semibold mb-6 text-center">Select Duration</h3>
+              <div className="flex flex-col items-center gap-6">
+                <div className="flex items-center gap-4">
+                  <input
+                    type="number"
+                    min="3"
+                    max="45"
+                    value={selectedMinutes}
+                    onChange={(e) => {
+                      const value = Math.max(3, Math.min(45, Number(e.target.value)));
+                      setSelectedMinutes(value);
+                    }}
+                    className="w-24 px-4 py-3 bg-slate-700/80 rounded-lg text-white/90 text-center text-2xl font-semibold focus:outline-none focus:ring-2"
+                    style={{ focusRingColor: chakraColor }}
+                  />
+                  <span className="text-white/80 text-lg font-medium">minutes</span>
+                </div>
+                
+                {/* Range Slider */}
+                <input
+                  type="range"
+                  min="3"
+                  max="45"
+                  value={selectedMinutes}
+                  onChange={(e) => setSelectedMinutes(Number(e.target.value))}
+                  className="w-64 h-2 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, ${chakraColor} 0%, ${chakraColor} ${((selectedMinutes - 3) / 42) * 100}%, #334155 ${((selectedMinutes - 3) / 42) * 100}%, #334155 100%)`
+                  }}
+                />
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-4 mt-2">
+                  <button
+                    onClick={handleStartWithDuration}
+                    className="px-8 py-3 rounded-xl text-white/90 font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
+                    style={{ 
+                      backgroundColor: chakraColor,
+                      boxShadow: `0 4px 20px ${chakraColor}60`
+                    }}
+                  >
+                    Start
+                  </button>
+                  <button
+                    onClick={handleCancelTimer}
+                    className="px-8 py-3 bg-slate-600/80 hover:bg-slate-500/80 text-white/90 rounded-xl font-semibold transition-all duration-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
