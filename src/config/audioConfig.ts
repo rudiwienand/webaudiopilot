@@ -12,15 +12,15 @@ export interface AudioConfig {
 // You can use services like: Dropbox, Google Drive (with direct link), AWS S3, or any CDN
 export const audioConfig: AudioConfig = {
   1: { // Root Chakra
-    1: "https://dl.dropboxusercontent.com/scl/fi/x1o6cuae9zj6xmisfhww3/track-1.mp3?rlkey=6wmqkyr9041h273o492iy8u5r&dl=1",
-    2: "https://dl.dropboxusercontent.com/scl/fi/k4qhpv3efxiz4g4rtcxf3/track-2.mp3?rlkey=f7593q3pca9jkjrniuvw8citq&dl=1",
-    3: "https://dl.dropboxusercontent.com/scl/fi/f2qx9avi9kgeefgd8jwtu/track-3.mp3?rlkey=03ahxm7fetqpx0t0cnfiqpdf7&dl=1",
-    4: "https://dl.dropboxusercontent.com/scl/fi/u5hudmmxexbhheyy02gf9/track-4.mp3?rlkey=qe3uy5fo8d4rxmn2co6tiantq&dl=1",
-    5: "https://dl.dropboxusercontent.com/scl/fi/g2rr4jozhh5sfdie1q2au/track-5.mp3?rlkey=9q7wjubd9ax7p7vxuhznwz9t8&dl=1",
-    6: "https://dl.dropboxusercontent.com/scl/fi/l6dlerqq86m6sotpuhcyj/track-6.mp3?rlkey=5gn7gfmovnqincqzrc9gdidur&dl=1",
-    7: "https://dl.dropboxusercontent.com/scl/fi/jbymn2pe1gomxxsyiczz0/track-7.mp3?rlkey=50ingvj68jylkn9nn9y3ijd9q&dl=1",
-    8: "https://dl.dropboxusercontent.com/scl/fi/zjlb3c2xnoeqq22fe63fs/track-8.mp3?rlkey=kc39keb4lgfvu9u28fg2jp3bw&dl=1",
-    9: "https://dl.dropboxusercontent.com/scl/fi/2rg3ax1g6ngb76se68d8j/track-9.mp3?rlkey=2v8ecwmkxy3xgglibbuhv5wu4&dl=1",
+    1: "https://dl.dropboxusercontent.com/scl/fi/1lbfw7mkfoif91a8lfqcl/track-1.mp3?rlkey=3h2hoqz9wha5w24joxll8fu9w&dl=1",
+    2: "https://dl.dropboxusercontent.com/scl/fi/ih5p8emwpv7yrd7ttatp9/track-2.mp3?rlkey=g7qxanbl6e0t34am5aj0h4ctx&dl=1",
+    3: "https://dl.dropboxusercontent.com/scl/fi/b7gc17qioflitvblvyffn/track-3.mp3?rlkey=qre012ektnbmkujfc8w9lt2fy&dl=1",
+    4: "https://dl.dropboxusercontent.com/scl/fi/dtwbic2ukd2xar993y269/track-4.mp3?rlkey=lsiex5a68x2uf8du9syfi56ca&dl=1",
+    5: "https://dl.dropboxusercontent.com/scl/fi/6n5plhahk3ablf3ws6n6l/track-5.mp3?rlkey=jn36ph9fqtwzgx09cb3imec7o&dl=1",
+    6: "https://dl.dropboxusercontent.com/scl/fi/zg63b6k9l78bcjv9z4r52/track-6.mp3?rlkey=g7qdaebnc9ximtmrkgcnqkmmv&dl=1",
+    7: "https://dl.dropboxusercontent.com/scl/fi/wcwq8d0ih6olixcjfea2p/track-7.mp3?rlkey=ekpg4u902pyalks2uvsrefhbk&dl=1",
+    8: "https://dl.dropboxusercontent.com/scl/fi/c36wfkbrdw6wyw1pq7mc0/track-8.mp3?rlkey=pbdztt1uoc6xslq5uyjph4gdw&dl=1",
+    9: "https://dl.dropboxusercontent.com/scl/fi/yg9apgqjdd77kkr6icbbg/track-9.mp3?rlkey=qet948h3v25cgzm5kzhvt5mk3&dl=1",
   },
   2: { // Sacral Chakra
     1: "https://dl.dropboxusercontent.com/scl/fi/cm5gr1iydatdm5uf1cfj3/2.track1-PAD1.mp3?rlkey=8v78irib7e6wsdye8j3h1fr50&dl=1",
