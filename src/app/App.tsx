@@ -27,6 +27,11 @@ export default function App() {
   const autoMixIntervalsRef = useRef<
     Map<number, NodeJS.Timeout>
   >(new Map());
+  const chakraSequenceRef = useRef<{
+    sequence: number[];
+    currentIndex: number;
+    totalDuration: number;
+  } | null>(null);
   const trackLifecyclesRef = useRef<Map<string, any>>(
     new Map(),
   );
@@ -296,334 +301,442 @@ export default function App() {
     );
   }, [selectedChakra]);
 
-  const handleStartAutoMix = (durationInSeconds: number) => {
+  const handleStartAutoMix = (durationInSeconds: number, chakraSequence?: number[]) => {
     const chakraId = selectedChakra;
 
     // If duration is 0, stop auto-mix
     if (durationInSeconds === 0) {
-      const interval =
-        autoMixIntervalsRef.current.get(chakraId);
-      if (interval) clearInterval(interval);
-      autoMixIntervalsRef.current.delete(chakraId);
+      // Stop all chakras if in sequence mode
+      if (chakraSequenceRef.current) {
+        chakraSequenceRef.current.sequence.forEach(id => {
+          const interval = autoMixIntervalsRef.current.get(id);
+          if (interval) clearInterval(interval);
+          autoMixIntervalsRef.current.delete(id);
+        });
+        chakraSequenceRef.current = null;
+      } else {
+        const interval = autoMixIntervalsRef.current.get(chakraId);
+        if (interval) clearInterval(interval);
+        autoMixIntervalsRef.current.delete(chakraId);
+      }
 
       // Stop auto-mix and reset position to top of outer circle
       setChakras((prev) =>
-        prev.map((chakra) =>
-          chakra.id === chakraId
-            ? {
-                ...chakra,
-                isAutoMixing: false,
-                isPlaying: false,
-                tracks: chakra.tracks.map((track) => ({
-                  ...track,
-                  volume: 0,
-                  isPlaying: true,
-                })),
-              }
-            : chakra,
-        ),
+        prev.map((chakra) => ({
+          ...chakra,
+          isAutoMixing: false,
+          isPlaying: false,
+          tracks: chakra.tracks.map((track) => ({
+            ...track,
+            volume: 0,
+            isPlaying: true,
+          })),
+        })),
       );
 
-      // Reset controller to top of outer circle
+      // Reset all controllers to top of outer circle
       setControllerPositions((prev) => {
         const newMap = new Map(prev);
-        newMap.set(chakraId, getDefaultControllerPosition());
+        for (let i = 1; i <= 7; i++) {
+          newMap.set(i, getDefaultControllerPosition());
+        }
         return newMap;
       });
       return;
     }
 
-    // Stop auto-mix if already running
-    if (autoMixIntervalsRef.current.has(chakraId)) {
-      const interval =
-        autoMixIntervalsRef.current.get(chakraId);
-      if (interval) clearInterval(interval);
-      autoMixIntervalsRef.current.delete(chakraId);
+    // Handle chakra sequence mode
+    if (chakraSequence && chakraSequence.length > 0) {
+      chakraSequenceRef.current = {
+        sequence: chakraSequence,
+        currentIndex: 0,
+        totalDuration: durationInSeconds
+      };
 
-      // Stop auto-mix and reset position to top of outer circle
-      setChakras((prev) =>
-        prev.map((chakra) =>
-          chakra.id === chakraId
-            ? {
-                ...chakra,
-                isAutoMixing: false,
-                isPlaying: false,
-                tracks: chakra.tracks.map((track) => ({
-                  ...track,
-                  volume: 0,
-                  isPlaying: true,
-                })),
-              }
-            : chakra,
-        ),
-      );
-
-      // Reset controller to top of outer circle
-      setControllerPositions((prev) => {
-        const newMap = new Map(prev);
-        newMap.set(chakraId, getDefaultControllerPosition());
-        return newMap;
+      const durationPerChakra = durationInSeconds / chakraSequence.length;
+      
+      console.log(`Starting chakra sequence: ${chakraSequence.length} chakras, ${(durationPerChakra/60).toFixed(1)} min each`);
+      
+      // Start with the first chakra in the sequence
+      const firstChakraId = chakraSequence[0];
+      setSelectedChakra(firstChakraId);
+      
+      // Start auto-mix for first chakra
+      startAutoMixForChakra(firstChakraId, durationPerChakra, true, () => {
+        // After first chakra completes, move to next
+        playNextChakraInSequence(1, chakraSequence, durationPerChakra);
       });
+      
       return;
     }
 
-    // Start auto-mix
+    // Single chakra mode (original behavior)
+    startAutoMixForChakra(chakraId, durationInSeconds, false);
+  };
+
+  const startAutoMixForChakra = (chakraId: number, durationInSeconds: number, isSequence: boolean, onComplete?: () => void) => {
+    // Stop any existing auto-mix for this chakra
+    const existingInterval = autoMixIntervalsRef.current.get(chakraId);
+    if (existingInterval) {
+      clearInterval(existingInterval);
+      autoMixIntervalsRef.current.delete(chakraId);
+    }
+
+    // Reset this chakra to silent state before starting
     setChakras((prev) =>
       prev.map((chakra) =>
         chakra.id === chakraId
           ? {
               ...chakra,
-              isAutoMixing: true,
-              isPlaying: true,
+              isAutoMixing: false,
+              isPlaying: false,
               tracks: chakra.tracks.map((track) => ({
                 ...track,
-                isPlaying: true,
                 volume: 0,
+                isPlaying: true,
               })),
             }
           : chakra,
       ),
     );
 
-    // Initialize controller position at bottom of outer circle
-    const initialAngle = -Math.PI / 2; // Top position (-90 degrees)
-    const initialX = 0.5; // Center horizontally
-    const initialY = 0.0; // Top of outer circle - ABSOLUTE ZERO
-
-    // Immediately set the controller position at the top (complete silence)
+    // RANDOMIZE ENTRY: Random position on outer circle (complete silence)
+    const randomEntryAngle = Math.random() * Math.PI * 2;
+    const entryX = 0.5 + Math.cos(randomEntryAngle) * 0.45;
+    const entryY = 0.5 + Math.sin(randomEntryAngle) * 0.45;
+    
     setControllerPositions((prev) => {
       const newMap = new Map(prev);
-      newMap.set(chakraId, { x: initialX, y: initialY });
+      newMap.set(chakraId, { x: entryX, y: entryY });
       return newMap;
     });
 
-    // Smooth random movement parameters
-    const startTime = Date.now();
-    const duration = durationInSeconds * 1000; // Convert to milliseconds
-    
-    // Scale phase durations proportionally to total duration
-    // Use percentages: fade-in = 5%, fade-out = 1.11%, middle = 93.89%
-    const fadeInPercentage = 0.05; // 5% for fade-in
-    const fadeOutPercentage = 0.0111; // 1.11% for fade-out (10s / 15min = 900s)
-    
-    const initialMoveDuration = duration * fadeInPercentage; // 5% of total time for fade-in
-    const finalMoveDuration = duration * fadeOutPercentage; // 1.11% of total time for fade-out
-    const constraintStartTime = 15000; // Start constraints after 15 seconds (fixed)
+    // Wait a brief moment for state to settle, then start auto-mix
+    setTimeout(() => {
+      // Start auto-mix
+      setChakras((prev) =>
+        prev.map((chakra) =>
+          chakra.id === chakraId
+            ? {
+                ...chakra,
+                isAutoMixing: true,
+                isPlaying: true,
+                tracks: chakra.tracks.map((track) => ({
+                  ...track,
+                  isPlaying: true,
+                  volume: 0,
+                })),
+              }
+            : chakra,
+        ),
+      );
 
-    // Movement constraint: third concentric circle from outside (innerRadius * 0.7)
-    // In canvas: innerRadius = size * 0.38, third circle = size * 0.38 * 0.7 = size * 0.266
-    // In normalized coords (where center is 0.5): maxRadius = 0.266
-    const maxAllowedRadius = 0.266; // Radius from center (0.5, 0.5) in normalized coordinates
+      // Initialize controller position at random point on outer circle (complete silence)
+      const initialAngle = randomEntryAngle;
+      const initialX = entryX;
+      const initialY = entryY;
 
-    // Perlin-noise-like smooth random walk using multiple sine waves
-    let currentX = initialX;
-    let currentY = initialY;
-
-    // Multiple sine wave frequencies for organic, never-stopping movement
-    // MUCH SLOWER frequencies for deeply meditative, gentle drift
-    // Add random variation to base frequencies for unique movement each time
-    const freqVariation1 = 0.95 + Math.random() * 0.10; // 0.95 to 1.05 multiplier (minimal variation)
-    const freqVariation2 = 0.95 + Math.random() * 0.10; // 0.95 to 1.05 multiplier (minimal variation)
-    const freqVariation3 = 0.95 + Math.random() * 0.10; // 0.95 to 1.05 multiplier (minimal variation)
-
-    const freq1 = 0.00008 * freqVariation1; // Ultra slow base frequency with variation
-    const freq2 = 0.00015 * freqVariation2; // Slow medium frequency with variation
-    const freq3 = 0.00025 * freqVariation3; // Gentle detail frequency with variation
-
-    // Random phase offsets for unique movement each time
-    const phaseX1 = Math.random() * Math.PI * 2;
-    const phaseY1 = Math.random() * Math.PI * 2;
-    const phaseX2 = Math.random() * Math.PI * 2;
-    const phaseY2 = Math.random() * Math.PI * 2;
-    const phaseX3 = Math.random() * Math.PI * 2;
-    const phaseY3 = Math.random() * Math.PI * 2;
-
-    // Random amplitude variations for each sine wave
-    const amp1X = 0.7 + Math.random() * 0.3; // 0.7 to 1.0
-    const amp1Y = 0.7 + Math.random() * 0.3;
-    const amp2X = 0.4 + Math.random() * 0.2; // 0.4 to 0.6
-    const amp2Y = 0.4 + Math.random() * 0.2;
-    const amp3X = 0.2 + Math.random() * 0.2; // 0.2 to 0.4
-    const amp3Y = 0.2 + Math.random() * 0.2;
-
-    // Random movement radius for this session
-    const baseMovementRadius = 0.25 + Math.random() * 0.1; // 0.25 to 0.35
-
-    // RANDOMIZE FADE-IN: Random starting angle on outer circle
-    const randomStartAngle = Math.random() * Math.PI * 2; // Any angle 0 to 360 degrees
-
-    // RANDOMIZE FADE-IN: Random target angle for spiral movement
-    const spiralRotation =
-      (Math.random() - 0.5) * Math.PI * 1.5; // -135 to +135 degrees rotation
-
-    // RANDOMIZE FADE-IN: Random target radius in the active zone
-    const fadeInTargetRadius = 0.2 + Math.random() * 0.15; // 0.20 to 0.35
-
-    // RANDOMIZE FADE-OUT: Random exit angle on outer circle
-    const randomExitAngle = Math.random() * Math.PI * 2; // Any angle 0 to 360 degrees
-
-    console.log(
-      `Auto-mix started: ${(initialMoveDuration/1000).toFixed(1)}sec fade-in → ultra-slow meditative drift → ${(finalMoveDuration/1000).toFixed(1)}sec fade-out (Total: ${(durationInSeconds/60).toFixed(1)} min)`,
-    );
-
-    // Animation loop - update controller position smoothly
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const elapsed = now - startTime;
-
-      // Stop after 15 minutes
-      if (elapsed >= duration) {
-        const currentInterval =
-          autoMixIntervalsRef.current.get(chakraId);
-        if (currentInterval) clearInterval(currentInterval);
-        autoMixIntervalsRef.current.delete(chakraId);
-
-        setChakras((prev) =>
-          prev.map((chakra) =>
-            chakra.id === chakraId
-              ? { ...chakra, isAutoMixing: false }
-              : chakra,
-          ),
-        );
-        return;
-      }
-
-      // Progress from 0 to 1 over 15 minutes
-      const progress = elapsed / duration;
-
-      // Phase 1: First 5 seconds - move from outer to inner
-      if (elapsed < initialMoveDuration) {
-        const phase1Progress = elapsed / initialMoveDuration; // 0 to 1
-        // Extra smooth easing for gentle fade-in from silence
-        const easedProgress =
-          phase1Progress *
-          phase1Progress *
-          phase1Progress *
-          (phase1Progress * (phase1Progress * 6 - 15) + 10); // Smootherstep
-
-        // Move from outer (0.45) to inner active zone (0.20-0.30)
-        const startRadius = 0.45;
-        const targetRadius = fadeInTargetRadius;
-        const currentRadius =
-          startRadius -
-          (startRadius - targetRadius) * easedProgress;
-
-        const angle =
-          randomStartAngle + spiralRotation * easedProgress; // Spiral inward
-        let targetX = 0.5 + Math.cos(angle) * currentRadius;
-        let targetY = 0.5 + Math.sin(angle) * currentRadius;
-
-        // Apply constraint after 15 seconds (even during fade-in)
-        if (elapsed > constraintStartTime) {
-          const targetRadius = Math.sqrt(
-            (targetX - 0.5) ** 2 + (targetY - 0.5) ** 2,
-          );
-          if (targetRadius > maxAllowedRadius) {
-            const constrainedAngle = Math.atan2(targetY - 0.5, targetX - 0.5);
-            targetX = 0.5 + Math.cos(constrainedAngle) * maxAllowedRadius;
-            targetY = 0.5 + Math.sin(constrainedAngle) * maxAllowedRadius;
-          }
-        }
-
-        // Ultra gentle interpolation for extremely slow, peaceful fade-in
-        const smoothing = 0.003072; // Reduced by another 20% for ultra-slow movement
-        currentX += (targetX - currentX) * smoothing;
-        currentY += (targetY - currentY) * smoothing;
-      }
-      // Phase 3: Last 5 seconds - move from inner to outer
-      else if (elapsed > duration - finalMoveDuration) {
-        const phase3Progress =
-          (elapsed - (duration - finalMoveDuration)) /
-          finalMoveDuration; // 0 to 1
-        // Extra smooth easing for gentle fade-out to silence
-        const easedProgress =
-          phase3Progress *
-          phase3Progress *
-          phase3Progress *
-          (phase3Progress * (phase3Progress * 6 - 15) + 10); // Smootherstep
-
-        // Move from current position to outer circle top (complete silence)
-        const targetAngle = randomExitAngle; // Top position for fade-out
-        const currentRadius = Math.sqrt(
-          (currentX - 0.5) ** 2 + (currentY - 0.5) ** 2,
-        );
-        const targetRadius = 0.45;
-
-        const newRadius =
-          currentRadius +
-          (targetRadius - currentRadius) * easedProgress;
-
-        // Smoothly transition angle to top position as well
-        const dx = currentX - 0.5;
-        const dy = currentY - 0.5;
-        const currentAngle = Math.atan2(dy, dx);
-        const angleDiff = targetAngle - currentAngle;
-        const normalizedAngleDiff = Math.atan2(
-          Math.sin(angleDiff),
-          Math.cos(angleDiff),
-        );
-        const newAngle =
-          currentAngle + normalizedAngleDiff * easedProgress;
-
-        const targetX = 0.5 + Math.cos(newAngle) * newRadius;
-        const targetY = 0.5 + Math.sin(newAngle) * newRadius;
-
-        // Very smooth interpolation for gradual fade-out
-        const smoothing = 0.032768; // Reduced by another 20% for ultra-slow fade-out
-        currentX += (targetX - currentX) * smoothing;
-        currentY += (targetY - currentY) * smoothing;
-      }
-      // Phase 2: Middle phase - continuous organic movement using sine waves
-      else {
-        // Perlin-noise-like smooth random walk using multiple overlapping sine waves
-        // This creates continuous, never-stopping, organic movement
-        const noiseX =
-          Math.sin(freq1 * elapsed + phaseX1) * amp1X +
-          Math.sin(freq2 * elapsed + phaseX2) * amp2X +
-          Math.sin(freq3 * elapsed + phaseX3) * amp3X;
-        const noiseY =
-          Math.sin(freq1 * elapsed + phaseY1) * amp1Y +
-          Math.sin(freq2 * elapsed + phaseY2) * amp2Y +
-          Math.sin(freq3 * elapsed + phaseY3) * amp3Y;
-
-        // Normalize to range [-1, 1] using actual random amplitude sums
-        const maxAmplitudeX = amp1X + amp2X + amp3X;
-        const maxAmplitudeY = amp1Y + amp2Y + amp3Y;
-        const normX = noiseX / maxAmplitudeX;
-        const normY = noiseY / maxAmplitudeY;
-
-        // Scale to movement range and apply constraint BEFORE smoothing
-        let targetX = 0.5 + normX * baseMovementRadius;
-        let targetY = 0.5 + normY * baseMovementRadius;
-
-        // Apply movement constraints after 15 seconds
-        if (elapsed > constraintStartTime) {
-          const targetRadius = Math.sqrt(
-            (targetX - 0.5) ** 2 + (targetY - 0.5) ** 2,
-          );
-          if (targetRadius > maxAllowedRadius) {
-            // Smoothly constrain to the boundary instead of hard clipping
-            const angle = Math.atan2(targetY - 0.5, targetX - 0.5);
-            targetX = 0.5 + Math.cos(angle) * maxAllowedRadius;
-            targetY = 0.5 + Math.sin(angle) * maxAllowedRadius;
-          }
-        }
-
-        // Smoother interpolation for constant, fluid movement without stopping
-        const smoothing = 0.00768; // Reduced by another 20% for ultra-slow movement
-        currentX += (targetX - currentX) * smoothing;
-        currentY += (targetY - currentY) * smoothing;
-      }
-
-      // Update controller position
+      // Immediately set the controller position at the entry point (complete silence)
       setControllerPositions((prev) => {
         const newMap = new Map(prev);
-        newMap.set(chakraId, { x: currentX, y: currentY });
+        newMap.set(chakraId, { x: initialX, y: initialY });
         return newMap;
       });
-    }, 50); // Update every 50ms for smooth movement
 
-    autoMixIntervalsRef.current.set(chakraId, interval);
+      // Smooth random movement parameters
+      const startTime = Date.now();
+      const duration = durationInSeconds * 1000; // Convert to milliseconds
+      
+      // FIXED PHASE DURATIONS for complete silence-to-silence cycle
+      // Ensure every chakra completes a full cycle regardless of total time
+      const fadeInDuration = Math.min(45000, duration * 0.15); // 15% or max 45s for fade-in
+      const fadeOutDuration = Math.min(60000, duration * 0.20); // 20% or max 60s for fade-out (slower, more integrated)
+      const middlePhaseDuration = duration - fadeInDuration - fadeOutDuration; // Remaining time
+      
+      const constraintStartTime = 15000; // Start constraints after 15 seconds (fixed)
+
+      // Movement constraint: third concentric circle from outside (innerRadius * 0.7)
+      // In canvas: innerRadius = size * 0.38, third circle = size * 0.38 * 0.7 = size * 0.266
+      // In normalized coords (where center is 0.5): maxRadius = 0.266
+      const maxAllowedRadius = 0.266; // Radius from center (0.5, 0.5) in normalized coordinates
+
+      // Perlin-noise-like smooth random walk using multiple sine waves
+      let currentX = initialX;
+      let currentY = initialY;
+      
+      // Store fade-out starting position
+      let fadeOutStartX: number | null = null;
+      let fadeOutStartY: number | null = null;
+
+      // Multiple sine wave frequencies for organic, never-stopping movement
+      // MUCH SLOWER frequencies for deeply meditative, gentle drift
+      // Add random variation to base frequencies for unique movement each time
+      const freqVariation1 = 0.95 + Math.random() * 0.10; // 0.95 to 1.05 multiplier (minimal variation)
+      const freqVariation2 = 0.95 + Math.random() * 0.10; // 0.95 to 1.05 multiplier (minimal variation)
+      const freqVariation3 = 0.95 + Math.random() * 0.10; // 0.95 to 1.05 multiplier (minimal variation)
+
+      const freq1 = 0.00008 * freqVariation1; // Ultra slow base frequency with variation
+      const freq2 = 0.00015 * freqVariation2; // Slow medium frequency with variation
+      const freq3 = 0.00025 * freqVariation3; // Gentle detail frequency with variation
+
+      // Random phase offsets for unique movement each time
+      const phaseX1 = Math.random() * Math.PI * 2;
+      const phaseY1 = Math.random() * Math.PI * 2;
+      const phaseX2 = Math.random() * Math.PI * 2;
+      const phaseY2 = Math.random() * Math.PI * 2;
+      const phaseX3 = Math.random() * Math.PI * 2;
+      const phaseY3 = Math.random() * Math.PI * 2;
+
+      // Random amplitude variations for each sine wave
+      const amp1X = 0.7 + Math.random() * 0.3; // 0.7 to 1.0
+      const amp1Y = 0.7 + Math.random() * 0.3;
+      const amp2X = 0.4 + Math.random() * 0.2; // 0.4 to 0.6
+      const amp2Y = 0.4 + Math.random() * 0.2;
+      const amp3X = 0.2 + Math.random() * 0.2; // 0.2 to 0.4
+      const amp3Y = 0.2 + Math.random() * 0.2;
+
+      // Random movement radius for this session
+      const baseMovementRadius = 0.25 + Math.random() * 0.1; // 0.25 to 0.35
+
+      // RANDOMIZE FADE-IN: Random starting angle on outer circle
+      const randomStartAngle = Math.random() * Math.PI * 2; // Any angle 0 to 360 degrees
+
+      // RANDOMIZE FADE-IN: Random target angle for spiral movement
+      const spiralRotation =
+        (Math.random() - 0.5) * Math.PI * 1.5; // -135 to +135 degrees rotation
+
+      // RANDOMIZE FADE-IN: Random target radius in the active zone
+      const fadeInTargetRadius = 0.2 + Math.random() * 0.15; // 0.20 to 0.35
+
+      // RANDOMIZE FADE-OUT: Random exit angle on outer circle
+      const randomExitAngle = Math.random() * Math.PI * 2; // Any angle 0 to 360 degrees
+
+      console.log(
+        `Chakra ${chakraId} auto-mix: ${(fadeInDuration/1000).toFixed(1)}s fade-in → ${(middlePhaseDuration/1000).toFixed(1)}s meditation → ${(fadeOutDuration/1000).toFixed(1)}s fade-out (Total: ${(durationInSeconds/60).toFixed(1)} min)`,
+      );
+
+      // Animation loop - update controller position smoothly
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - startTime;
+
+        // Complete cycle - stop and call onComplete if provided
+        if (elapsed >= duration) {
+          const currentInterval =
+            autoMixIntervalsRef.current.get(chakraId);
+          if (currentInterval) clearInterval(currentInterval);
+          autoMixIntervalsRef.current.delete(chakraId);
+
+          // End at complete silence (outer circle)
+          setControllerPositions((prev) => {
+            const newMap = new Map(prev);
+            const exitX = 0.5 + Math.cos(randomExitAngle) * 0.45;
+            const exitY = 0.5 + Math.sin(randomExitAngle) * 0.45;
+            newMap.set(chakraId, { x: exitX, y: exitY });
+            return newMap;
+          });
+
+          setChakras((prev) =>
+            prev.map((chakra) =>
+              chakra.id === chakraId
+                ? { 
+                    ...chakra, 
+                    isAutoMixing: false,
+                    isPlaying: false,
+                    tracks: chakra.tracks.map((track) => ({
+                      ...track,
+                      volume: 0,
+                      isPlaying: true,
+                    })),
+                  }
+                : chakra,
+            ),
+          );
+          
+          if (onComplete) {
+            // Wait a moment before transitioning to next chakra (allow fade-out to settle)
+            setTimeout(() => onComplete(), 1500);
+          }
+          return;
+        }
+
+        // Phase 1: Fade-in - move from outer (silence) to inner (active zone)
+        if (elapsed < fadeInDuration) {
+          const phase1Progress = elapsed / fadeInDuration; // 0 to 1
+          // Extra smooth easing for gentle fade-in from silence
+          const easedProgress =
+            phase1Progress *
+            phase1Progress *
+            phase1Progress *
+            (phase1Progress * (phase1Progress * 6 - 15) + 10); // Smootherstep
+
+          // Move from outer (0.45) to inner active zone (0.20-0.35)
+          const startRadius = 0.45;
+          const targetRadius = fadeInTargetRadius;
+          const currentRadius =
+            startRadius -
+            (startRadius - targetRadius) * easedProgress;
+
+          const angle =
+            randomStartAngle + spiralRotation * easedProgress; // Spiral inward
+          let targetX = 0.5 + Math.cos(angle) * currentRadius;
+          let targetY = 0.5 + Math.sin(angle) * currentRadius;
+
+          // Apply constraint after 15 seconds (even during fade-in)
+          if (elapsed > constraintStartTime) {
+            const targetRadius = Math.sqrt(
+              (targetX - 0.5) ** 2 + (targetY - 0.5) ** 2,
+            );
+            if (targetRadius > maxAllowedRadius) {
+              const constrainedAngle = Math.atan2(targetY - 0.5, targetX - 0.5);
+              targetX = 0.5 + Math.cos(constrainedAngle) * maxAllowedRadius;
+              targetY = 0.5 + Math.sin(constrainedAngle) * maxAllowedRadius;
+            }
+          }
+
+          // Ultra gentle interpolation for extremely slow, peaceful fade-in
+          const smoothing = 0.003072; // Reduced by another 20% for ultra-slow movement
+          currentX += (targetX - currentX) * smoothing;
+          currentY += (targetY - currentY) * smoothing;
+        }
+        // Phase 3: Fade-out - move from current position to outer (silence)
+        else if (elapsed > duration - fadeOutDuration) {
+          const phase3Progress =
+            (elapsed - (duration - fadeOutDuration)) /
+            fadeOutDuration; // 0 to 1
+          
+          // Ultra-smooth easing curve for gentle, seamless fade-out
+          // Smootherstep provides the smoothest acceleration/deceleration
+          const t = phase3Progress;
+          const easedProgress = t * t * t * (t * (t * 6 - 15) + 10);
+
+          // Store starting position at the beginning of fade-out
+          if (phase3Progress < 0.02) {
+            // First frame of fade-out - store current position as start
+            if (!fadeOutStartX) {
+              fadeOutStartX = currentX;
+              fadeOutStartY = currentY;
+            }
+          }
+          
+          // Use stored start position or current position
+          const startX = fadeOutStartX || currentX;
+          const startY = fadeOutStartY || currentY;
+
+          // Calculate start radius and angle
+          const startRadius = Math.sqrt(
+            (startX - 0.5) ** 2 + (startY - 0.5) ** 2,
+          );
+          const startDx = startX - 0.5;
+          const startDy = startY - 0.5;
+          const startAngle = Math.atan2(startDy, startDx);
+
+          // Target is outer circle at exit angle
+          const targetRadius = 0.45;
+          const targetAngle = randomExitAngle;
+          
+          // Calculate angle difference (shortest path)
+          const angleDiff = targetAngle - startAngle;
+          const normalizedAngleDiff = Math.atan2(
+            Math.sin(angleDiff),
+            Math.cos(angleDiff),
+          );
+
+          // Interpolate radius and angle using eased progress
+          const newRadius = startRadius + (targetRadius - startRadius) * easedProgress;
+          const newAngle = startAngle + normalizedAngleDiff * easedProgress;
+
+          // Calculate final position - directly from eased progress (no additional smoothing)
+          currentX = 0.5 + Math.cos(newAngle) * newRadius;
+          currentY = 0.5 + Math.sin(newAngle) * newRadius;
+        }
+        // Phase 2: Middle phase - continuous organic movement
+        else {
+          // Perlin-noise-like smooth random walk using multiple overlapping sine waves
+          // This creates continuous, never-stopping, organic movement
+          const noiseX =
+            Math.sin(freq1 * elapsed + phaseX1) * amp1X +
+            Math.sin(freq2 * elapsed + phaseX2) * amp2X +
+            Math.sin(freq3 * elapsed + phaseX3) * amp3X;
+          const noiseY =
+            Math.sin(freq1 * elapsed + phaseY1) * amp1Y +
+            Math.sin(freq2 * elapsed + phaseY2) * amp2Y +
+            Math.sin(freq3 * elapsed + phaseY3) * amp3Y;
+
+          // Normalize to range [-1, 1] using actual random amplitude sums
+          const maxAmplitudeX = amp1X + amp2X + amp3X;
+          const maxAmplitudeY = amp1Y + amp2Y + amp3Y;
+          const normX = noiseX / maxAmplitudeX;
+          const normY = noiseY / maxAmplitudeY;
+
+          // Scale to movement range and apply constraint BEFORE smoothing
+          let targetX = 0.5 + normX * baseMovementRadius;
+          let targetY = 0.5 + normY * baseMovementRadius;
+
+          // Apply movement constraints after 15 seconds
+          if (elapsed > constraintStartTime) {
+            const targetRadius = Math.sqrt(
+              (targetX - 0.5) ** 2 + (targetY - 0.5) ** 2,
+            );
+            if (targetRadius > maxAllowedRadius) {
+              // Smoothly constrain to the boundary instead of hard clipping
+              const angle = Math.atan2(targetY - 0.5, targetX - 0.5);
+              targetX = 0.5 + Math.cos(angle) * maxAllowedRadius;
+              targetY = 0.5 + Math.sin(angle) * maxAllowedRadius;
+            }
+          }
+
+          // Smoother interpolation for constant, fluid movement without stopping
+          const smoothing = 0.00768; // Reduced by another 20% for ultra-slow movement
+          currentX += (targetX - currentX) * smoothing;
+          currentY += (targetY - currentY) * smoothing;
+        }
+
+        // Update controller position
+        setControllerPositions((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(chakraId, { x: currentX, y: currentY });
+          return newMap;
+        });
+      }, 50); // Update every 50ms for smooth movement
+
+      autoMixIntervalsRef.current.set(chakraId, interval);
+    }, 100); // Brief delay to allow state reset
+  };
+
+  const playNextChakraInSequence = (currentIndex: number, chakraSequence: number[], durationPerChakra: number) => {
+    const currentRef = chakraSequenceRef.current;
+    if (!currentRef) return;
+
+    // Check if we have reached the end of the sequence
+    if (currentIndex >= chakraSequence.length) {
+      // Sequence complete - stop autopilot
+      console.log('Chakra sequence complete. Stopping autopilot.');
+      chakraSequenceRef.current = null;
+      
+      // Ensure all chakras are in stopped state
+      setChakras((prev) =>
+        prev.map((chakra) => ({
+          ...chakra,
+          isAutoMixing: false,
+          isPlaying: false,
+          tracks: chakra.tracks.map((track) => ({
+            ...track,
+            volume: 0,
+            isPlaying: true,
+          })),
+        })),
+      );
+      
+      return;
+    }
+
+    // Get the next chakra ID
+    const nextChakraId = chakraSequence[currentIndex];
+    setSelectedChakra(nextChakraId);
+    startAutoMixForChakra(nextChakraId, durationPerChakra, true, () => {
+      playNextChakraInSequence(currentIndex + 1, chakraSequence, durationPerChakra);
+    });
   };
 
   // Cleanup intervals on unmount
