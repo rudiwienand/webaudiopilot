@@ -1188,15 +1188,35 @@ export default function App() {
             )}
           </div>
 
-          {/* More Sound Meditations Link */}
-          <a
-            href="https://www.thetuningfork.life/music"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block px-6 py-3 bg-gradient-to-r from-purple-600/80 to-indigo-600/80 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 font-medium"
-          >
-            More Sound Meditations
-          </a>
+          {/* Buttons Container */}
+          <div className="flex flex-wrap justify-center items-center gap-4">
+            <a
+              href="https://www.thetuningfork.life/music"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 h-12 w-64 bg-gradient-to-r from-purple-600/80 to-indigo-600/80 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 font-medium"
+            >
+              <span className="text-lg">🧘</span>
+              <span>More sound meditations</span>
+            </a>
+
+            <a
+              href="https://ko-fi.com/B0B41WGFM5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 h-12 w-64 bg-gradient-to-r from-indigo-600/80 to-purple-600/80 hover:from-indigo-600 hover:to-purple-600 text-white rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 font-medium"
+            >
+              <span className="text-lg">☕</span>
+              <span>Buy me a coffee</span>
+            </a>
+          </div>
+
+          {/* Hans Cousto's Cosmic Octave Explanation */}
+          <div className="max-w-4xl mx-auto mt-6 p-4 bg-slate-800/50 backdrop-blur-sm rounded-lg border border-white/10">
+            <p className="text-xs text-white/70 leading-relaxed text-left">
+              All frequencies here are based on Hans Cousto's Cosmic Octave, which converts planetary cycles (rotation and orbital periods) into frequencies using f = 1/T (f-frequency, T-time) and shifts them into the audible range through repeated octave doubling (f × 2ⁿ). These tones preserve the proportional relationships of the original motions, forming musical pitches that are not literal planetary sounds but mathematically scaled representations of their rhythms, stimulating the listeners organism to resonate with its own macro-cosmic nature. Scales and melodies are tuned to natural scale intervals to ensure harmonic coherence.
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -60,17 +60,21 @@ export function useAudioEngine(
 
     const loadAudioFiles = async () => {
       setLoadError(null);
+      setLoadingProgress(0);
       let loadedCount = 0;
       const totalTracks = tracks.length;
       let hasAnyError = false;
       let errorMessage = '';
 
+      // Load tracks sequentially to avoid overwhelming the browser
       for (const track of tracks) {
         try {
           const audioPath = getAudioUrl(chakraId, track.id);
           
           if (!audioPath || audioPath.includes('your-cdn.com')) {
             // Silently skip placeholder URLs - this is expected for demo
+            loadedCount++;
+            setLoadingProgress((loadedCount / totalTracks) * 100);
             continue;
           }
 
@@ -79,13 +83,15 @@ export function useAudioEngine(
           audioElement.crossOrigin = 'anonymous';
           audioElement.loop = true;
           audioElement.preload = 'auto';
+          audioElement.volume = 1.0; // Set to max, we'll control via gain node
           
-          // Create promise to wait for audio to load
+          // Create promise to wait for audio to be fully buffered
           const loadPromise = new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
               reject(new Error('Audio load timeout'));
-            }, 15000); // 15 second timeout
+            }, 30000); // Increased to 30 second timeout per track
 
+            // Wait for 'canplaythrough' which means enough data is buffered
             audioElement.addEventListener('canplaythrough', () => {
               clearTimeout(timeout);
               resolve();
@@ -93,14 +99,9 @@ export function useAudioEngine(
 
             audioElement.addEventListener('error', (e) => {
               clearTimeout(timeout);
-              // Only log errors for non-demo chakras to reduce console noise
               const errorDetails = audioElement.error ? {
                 code: audioElement.error.code,
                 message: audioElement.error.message,
-                MEDIA_ERR_ABORTED: audioElement.error.code === 1,
-                MEDIA_ERR_NETWORK: audioElement.error.code === 2,
-                MEDIA_ERR_DECODE: audioElement.error.code === 3,
-                MEDIA_ERR_SRC_NOT_SUPPORTED: audioElement.error.code === 4
               } : 'Unknown error';
               
               console.error(`Audio error for chakra ${chakraId}, track ${track.id}:`, errorDetails);
@@ -133,6 +134,8 @@ export function useAudioEngine(
 
           loadedCount++;
           setLoadingProgress((loadedCount / totalTracks) * 100);
+          
+          console.log(`✅ Loaded chakra ${chakraId}, track ${track.id} (${loadedCount}/${totalTracks})`);
         } catch (error: any) {
           // Only log errors for chakra 1 (which has real audio files)
           if (chakraId === 1) {
@@ -144,6 +147,9 @@ export function useAudioEngine(
           if (error?.message?.includes('CORS') || error?.code === 18 || error?.name === 'NetworkError') {
             errorMessage = 'CORS';
           }
+          
+          loadedCount++;
+          setLoadingProgress((loadedCount / totalTracks) * 100);
         }
       }
 
@@ -154,7 +160,7 @@ export function useAudioEngine(
         } else {
           setLoadError(`No audio files found. Please add your MP3 files.`);
         }
-      } else if (loadedCount < totalTracks) {
+      } else if (loadedCount < totalTracks && hasAnyError) {
         console.warn(`Loaded ${loadedCount} out of ${totalTracks} tracks for chakra ${chakraId}`);
       }
     };
