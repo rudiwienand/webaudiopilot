@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Volume2, VolumeX, Sparkles } from "lucide-react";
+import { Volume2, VolumeX, Sparkles, Play, Pause } from "lucide-react";
 import { MandalaController } from "./MandalaController";
 
 interface Track {
@@ -12,7 +12,7 @@ interface Track {
 interface MixerPanelProps {
   tracks: Track[];
   onVolumeChange: (trackId: number, volume: number) => void;
-  onTogglePlay: () => void;
+  onTogglePlay: () => void; // Individual track toggle (not used)
   isPlaying: boolean;
   chakraId: number;
   chakraName: string;
@@ -27,8 +27,12 @@ interface MixerPanelProps {
   isLoadingTracks: boolean;
   controllerPosition?: { x: number; y: number };
   onControllerMove?: (x: number, y: number) => void;
+  onUserDragStart?: () => void;
+  onUserDragEnd?: () => void;
   audioContext: AudioContext | null;
   masterGainNode: GainNode | null;
+  isChakraPlaying: boolean; // Main chakra playing state
+  onToggleChakraPlay: () => void; // Main play/pause button handler
 }
 
 const CHAKRA_LIST = [
@@ -59,8 +63,12 @@ export function MixerPanel({
   isLoadingTracks,
   controllerPosition,
   onControllerMove,
+  onUserDragStart,
+  onUserDragEnd,
   audioContext,
-  masterGainNode
+  masterGainNode,
+  isChakraPlaying,
+  onToggleChakraPlay
 }: MixerPanelProps) {
   const [showTimerSelection, setShowTimerSelection] = useState(false);
   const [selectedMinutes, setSelectedMinutes] = useState(15);
@@ -192,7 +200,7 @@ export function MixerPanel({
         <div className="flex items-center justify-between mb-4">
           <div className="flex flex-col items-center flex-1">
             <button
-              onClick={onTogglePlay}
+              onClick={onToggleChakraPlay}
               disabled={isLoadingTracks}
               className={`w-20 h-20 mb-3 rounded-full border-4 border-white/30 flex items-center justify-center transition-all duration-300 hover:scale-110 relative group ${isLoadingTracks ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ 
@@ -200,10 +208,10 @@ export function MixerPanel({
                 boxShadow: `0 0 30px ${chakraColor}60`
               }}
             >
-              {isPlaying ? (
-                <VolumeX className="w-8 h-8 text-white drop-shadow-lg" />
+              {isChakraPlaying ? (
+                <Pause className="w-8 h-8 text-white drop-shadow-lg fill-white" />
               ) : (
-                <Volume2 className="w-8 h-8 text-white drop-shadow-lg ml-1" />
+                <Play className="w-8 h-8 text-white drop-shadow-lg ml-1 fill-white" />
               )}
             </button>
             <h2 className="text-white/90 mb-2">{chakraName}</h2>
@@ -248,6 +256,8 @@ export function MixerPanel({
           chakraId={chakraId}
           controllerPosition={controllerPosition}
           onControllerMove={onControllerMove}
+          onUserDragStart={onUserDragStart}
+          onUserDragEnd={onUserDragEnd}
           isAutoMixing={isAutoMixing}
         />
 

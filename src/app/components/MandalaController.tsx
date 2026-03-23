@@ -14,6 +14,8 @@ interface MandalaControllerProps {
   chakraId?: number;
   controllerPosition?: { x: number; y: number };
   onControllerMove?: (x: number, y: number) => void;
+  onUserDragStart?: () => void;
+  onUserDragEnd?: () => void;
   isAutoMixing: boolean;
 }
 
@@ -24,6 +26,8 @@ export function MandalaController({
   chakraId,
   controllerPosition,
   onControllerMove,
+  onUserDragStart,
+  onUserDragEnd,
   isAutoMixing
 }: MandalaControllerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -720,8 +724,9 @@ export function MandalaController({
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isAutoMixing) return; // Don't allow manual control during auto-mix
+    // Always allow manual control, even during auto-mix
     setIsDragging(true);
+    onUserDragStart?.();
     const pos = getCanvasPosition(e.clientX, e.clientY);
     if (pos) {
       setLocalControllerPos(pos);
@@ -730,7 +735,7 @@ export function MandalaController({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || isAutoMixing) return;
+    if (!isDragging) return;
     const pos = getCanvasPosition(e.clientX, e.clientY);
     if (pos) {
       setLocalControllerPos(pos);
@@ -740,13 +745,15 @@ export function MandalaController({
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    onUserDragEnd?.();
   };
 
   // Touch event handlers
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (isAutoMixing) return;
+    // Always allow manual control, even during auto-mix
     e.preventDefault(); // Prevent scrolling while touching
     setIsDragging(true);
+    onUserDragStart?.();
     const touch = e.touches[0];
     const pos = getCanvasPosition(touch.clientX, touch.clientY);
     if (pos) {
@@ -756,7 +763,7 @@ export function MandalaController({
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDragging || isAutoMixing) return;
+    if (!isDragging) return;
     e.preventDefault(); // Prevent scrolling while touching
     const touch = e.touches[0];
     const pos = getCanvasPosition(touch.clientX, touch.clientY);
@@ -769,6 +776,7 @@ export function MandalaController({
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     setIsDragging(false);
+    onUserDragEnd?.();
   };
 
   return (

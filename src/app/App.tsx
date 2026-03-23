@@ -46,6 +46,12 @@ export default function App() {
       }
     >
   >(new Map());
+  
+  // Track whether user is manually dragging controller
+  const userIsDraggingRef = useRef<Map<number, boolean>>(new Map());
+  
+  // Wake Lock for keeping screen on during auto-pilot (mobile support)
+  const wakeLockRef = useRef<any>(null);
 
   // Default controller position: bottom of outer circle
   const getDefaultControllerPosition = () => {
@@ -238,15 +244,24 @@ export default function App() {
   };
 
   const handleToggleChakraPlay = () => {
+    const currentChakra = chakras.find(c => c.id === selectedChakra);
+    
+    // If auto-mixing is active, stop it and set to stopped state (don't toggle)
+    if (currentChakra?.isAutoMixing) {
+      handleStartAutoMix(0); // This stops auto-mix and sets isPlaying to false
+      return; // Exit early - don't toggle, just stop
+    }
+
+    // Normal toggle when auto-pilot is not active
     setChakras((prev) =>
       prev.map((chakra) => {
         if (chakra.id === selectedChakra) {
           const newIsPlaying = !chakra.isPlaying;
 
-          // Reset controller to zero position (top of circle) when toggling play/stop
+          // Always reset controller to zero volume position (top of outer circle)
           setControllerPositions((prevPos) => {
             const newMap = new Map(prevPos);
-            newMap.set(selectedChakra, { x: 0.5, y: 0.0 }); // Absolute zero volume position
+            newMap.set(selectedChakra, { x: 0.5, y: 0.0 }); // Top of outer circle = complete silence
             return newMap;
           });
 
@@ -270,6 +285,14 @@ export default function App() {
       newMap.set(selectedChakra, { x, y });
       return newMap;
     });
+  };
+
+  const handleUserDragStart = () => {
+    userIsDraggingRef.current.set(selectedChakra, true);
+  };
+
+  const handleUserDragEnd = () => {
+    userIsDraggingRef.current.set(selectedChakra, false);
   };
 
   // Reset controller position and volumes when changing chakras
@@ -694,6 +717,17 @@ export default function App() {
 
         // Update controller position
         setControllerPositions((prev) => {
+          // Skip update if user is manually dragging this chakra
+          if (userIsDraggingRef.current.get(chakraId)) {
+            // User is dragging - update currentX/currentY to match user position for seamless handoff
+            const userPos = prev.get(chakraId);
+            if (userPos) {
+              currentX = userPos.x;
+              currentY = userPos.y;
+            }
+            return prev; // Don't update position, user is in control
+          }
+          
           const newMap = new Map(prev);
           newMap.set(chakraId, { x: currentX, y: currentY });
           return newMap;
@@ -748,6 +782,75 @@ export default function App() {
     };
   }, []);
 
+  // Wake Lock: Keep screen on during auto-pilot (mobile support)
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      // Check if any chakra is in auto-mixing mode
+      const isAnyAutoMixing = chakras.some(c => c.isAutoMixing);
+      
+      if (isAnyAutoMixing) {
+        // Request wake lock when auto-pilot starts
+        if ('wakeLock' in navigator) {
+          try {
+            wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+            console.log('Wake Lock activated - screen will stay on during meditation');
+            
+            // Handle wake lock release (e.g., when user switches tabs)
+            wakeLockRef.current.addEventListener('release', () => {
+              console.log('Wake Lock released');
+            });
+          } catch (err: any) {
+            console.warn('Wake Lock not available:', err?.message);
+          }
+        }
+      } else {
+        // Release wake lock when auto-pilot stops
+        if (wakeLockRef.current) {
+          try {
+            await wakeLockRef.current.release();
+            wakeLockRef.current = null;
+            console.log('Wake Lock released - screen can turn off normally');
+          } catch (err) {
+            console.warn('Failed to release wake lock:', err);
+          }
+        }
+      }
+    };
+
+    requestWakeLock();
+
+    // Cleanup wake lock on unmount
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+  }, [chakras]);
+
+  // Re-request wake lock when page becomes visible again (mobile support)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && chakras.some(c => c.isAutoMixing)) {
+        // Re-request wake lock when returning to the page
+        if ('wakeLock' in navigator && !wakeLockRef.current) {
+          try {
+            wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+            console.log('Wake Lock re-acquired after visibility change');
+          } catch (err) {
+            console.warn('Failed to re-acquire wake lock:', err);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [chakras]);
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-2 md:p-8">
       <div className="max-w-[1800px] mx-auto space-y-4 md:space-y-6">
@@ -790,6 +893,8 @@ export default function App() {
               selectedChakra,
             )}
             onControllerMove={handleControllerMove}
+            onUserDragStart={handleUserDragStart}
+            onUserDragEnd={handleUserDragEnd}
             audioContext={audioContext}
             masterGainNode={masterGainNode}
           />

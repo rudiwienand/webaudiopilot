@@ -54,6 +54,52 @@ export function useAudioEngine(
     };
   }, []);
 
+  // Keep audio playing in background when screen is locked (mobile support)
+  useEffect(() => {
+    if (!audioContextRef.current) return;
+
+    const handleVisibilityChange = () => {
+      // Resume audio context if it gets suspended when screen locks
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume().then(() => {
+          console.log('Audio context resumed after visibility change');
+        }).catch(err => {
+          console.warn('Failed to resume audio context:', err);
+        });
+      }
+    };
+
+    const handleFocus = () => {
+      // Resume audio context when page regains focus
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume().then(() => {
+          console.log('Audio context resumed after focus');
+        }).catch(err => {
+          console.warn('Failed to resume audio context:', err);
+        });
+      }
+    };
+
+    // Listen for visibility changes (screen lock, tab switch)
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    // Periodically check and resume audio context if suspended (extra safety for mobile)
+    const keepAliveInterval = setInterval(() => {
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended' && isChakraPlaying) {
+        audioContextRef.current.resume().catch(err => {
+          console.warn('Keep-alive resume failed:', err);
+        });
+      }
+    }, 1000); // Check every second when playing
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(keepAliveInterval);
+    };
+  }, [isChakraPlaying]);
+
   // Load audio files for the current chakra using HTML5 Audio (works with CORS-restricted URLs)
   useEffect(() => {
     if (!audioContextRef.current || !isInitialized) return;
